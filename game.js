@@ -45,6 +45,7 @@
   let raycaster = new THREE.Raycaster();
   const moveDir = new THREE.Vector3();
   const tmpVec = new THREE.Vector3();
+  const shootDir = new THREE.Vector3();
 
   const canvas = document.getElementById("game-canvas");
   const menu = document.getElementById("menu");
@@ -225,6 +226,7 @@
     sprite.scale.set(1.4, 0.22, 1);
     sprite.position.y = 2.75;
     sprite.renderOrder = 999;
+    sprite.raycast = function () {};
     return { sprite, canvas: c, tex, ctx: c.getContext("2d") };
   }
 
@@ -238,20 +240,40 @@
     hb.tex.needsUpdate = true;
   }
 
+  function hideTransientHud() {
+    document.getElementById("reload-hint").classList.add("hidden");
+    document.getElementById("low-health-warn").classList.add("hidden");
+    document.getElementById("hit-marker").classList.add("hidden");
+  }
+
+  function cancelReload() {
+    if (!reloading) return;
+    reloading = false;
+    document.getElementById("reload-hint").classList.add("hidden");
+  }
+
   function createEnemy(x, z) {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
 
+    const hitbox = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 2.5, 1.1),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    hitbox.position.y = 1.25;
+    hitbox.name = "hitbox";
+    group.add(hitbox);
+
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.55, 0.75, 24),
-      new THREE.MeshBasicMaterial({ color: 0xff2200, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+      new THREE.RingGeometry(0.7, 0.95, 24),
+      new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.06;
     group.add(ring);
 
-    const bodyMat = new THREE.MeshLambertMaterial({ color: 0xff2222, emissive: 0x660000 });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.3, 0.45), bodyMat);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0xff1111, emissive: 0xaa0000 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.45, 0.55), bodyMat);
     body.position.y = 1.35;
     group.add(body);
 
@@ -412,8 +434,12 @@
 
   function shoot() {
     const now = performance.now();
-    if (reloading || now - lastShot < FIRE_RATE || ammo <= 0) {
-      if (ammo <= 0 && !reloading) startReload();
+    if (now - lastShot < FIRE_RATE) return;
+
+    if (reloading) cancelReload();
+
+    if (ammo <= 0) {
+      startReload();
       return;
     }
 
@@ -424,27 +450,25 @@
     muzzleFlash.intensity = 2;
     setTimeout(() => { muzzleFlash.intensity = 0; }, 35);
 
-    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    raycaster.set(camera.position, dir, 0, 80);
+    camera.getWorldDirection(shootDir);
+    raycaster.set(camera.position, shootDir, 0, 100);
 
-    const coverHits = raycaster.intersectObjects(coverMeshes, false);
-    const maxDist = coverHits.length > 0 ? coverHits[0].distance : 80;
+    const aliveMeshes = enemies.filter((e) => e.alive).map((e) => e.mesh);
+    const allTargets = coverMeshes.concat(aliveMeshes);
+    const hits = raycaster.intersectObjects(allTargets, true);
+    if (hits.length === 0) {
+      if (ammo <= 0) startReload();
+      return;
+    }
 
-    raycaster.far = maxDist;
-    const enemyHits = raycaster.intersectObjects(
-      enemies.filter((e) => e.alive).map((e) => e.mesh),
-      true
-    );
-
-    if (enemyHits.length > 0 && enemyHits[0].distance <= maxDist + 0.01) {
-      const target = findEnemyFromHit(enemyHits[0].object);
-      if (target) {
-        const isHead = enemyHits[0].object.name === "head";
-        target.health -= isHead ? PLAYER_DAMAGE * 2 : PLAYER_DAMAGE + Math.random() * 6;
-        updateHealthBar(target.healthBar, target.health / target.maxHealth);
-        flashHitMarker(isHead);
-        if (target.health <= 0) killEnemy(target);
-      }
+    const first = hits[0];
+    const target = findEnemyFromHit(first.object);
+    if (target) {
+      const isHead = first.object.name === "head";
+      target.health -= isHead ? PLAYER_DAMAGE * 2 : PLAYER_DAMAGE + Math.random() * 6;
+      updateHealthBar(target.healthBar, Math.max(0, target.health / target.maxHealth));
+      flashHitMarker(isHead);
+      if (target.health <= 0) killEnemy(target);
     }
 
     if (ammo <= 0) startReload();
@@ -568,11 +592,14 @@
     score = 0;
     wave = 1;
     reloading = false;
+    reloadEnd = 0;
     invincibleUntil = 0;
     waveGraceUntil = 0;
+    mouseDown = false;
     camera.position.set(0, 1.7, 0);
     yaw = 0;
     pitch = 0;
+    hideTransientHud();
     updateHUD();
     spawnWave();
   }
@@ -598,7 +625,7 @@
     lastTime = now;
 
     if (reloading && now >= reloadEnd) finishReload();
-    if (mouseDown && pointerLocked) shoot();
+    if (mouseDown) shoot();
 
     let mdx = 0;
     let mdz = 0;
@@ -677,8 +704,19 @@
     pitch = THREE.MathUtils.clamp(pitch, -1.45, 1.45);
   });
 
+  canvas.addEventListener("click", () => {
+    if (gameState === "playing" && document.pointerLockElement !== canvas) {
+      canvas.requestPointerLock();
+    }
+  });
+
   document.addEventListener("mousedown", (e) => {
-    if (e.button === 0 && gameState === "playing") mouseDown = true;
+    if (e.button !== 0 || gameState !== "playing") return;
+    mouseDown = true;
+    if (document.pointerLockElement !== canvas) {
+      canvas.requestPointerLock();
+    }
+    shoot();
   });
   document.addEventListener("mouseup", () => { mouseDown = false; });
 

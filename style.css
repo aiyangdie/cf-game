@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+.hidden {
+  display: none !important;
+}
+
 body {
   overflow: hidden;
   font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
@@ -275,8 +279,8 @@ kbd {
 #crosshair::after {
   content: "";
   position: absolute;
-  background: rgba(30, 30, 30, 0.85);
-  box-shadow: 0 0 2px #fff;
+  background: #ff2200;
+  box-shadow: 0 0 0 1px #fff, 0 0 6px rgba(255, 40, 0, 0.8);
 }
 
 #crosshair::before {

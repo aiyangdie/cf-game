@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>穿越火线 · 网页版 CF</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="menu" class="screen active">
+    <div class="menu-bg"></div>
+    <div class="menu-content">
+      <h1 class="logo">穿越火线</h1>
+      <p class="subtitle">CROSS FIRE · WEB EDITION</p>
+      <div class="menu-buttons">
+        <button id="btn-start" class="btn-primary">开始游戏</button>
+        <button id="btn-help" class="btn-secondary">操作说明</button>
+      </div>
+      <p class="credit">GitHub Pages 在线版 · aiyangdie</p>
+    </div>
+  </div>
+
+  <div id="help" class="screen">
+    <div class="help-panel">
+      <h2>操作说明</h2>
+      <ul>
+        <li><kbd>W A S D</kbd> 移动</li>
+        <li><kbd>鼠标</kbd> 瞄准（点击画面锁定鼠标）</li>
+        <li><kbd>左键</kbd> 射击</li>
+        <li><kbd>R</kbd> 换弹</li>
+        <li><kbd>Shift</kbd> 冲刺</li>
+        <li><kbd>ESC</kbd> 暂停 / 返回菜单</li>
+      </ul>
+      <p>消灭所有敌人即可过关，注意弹药和血量！</p>
+      <button id="btn-back" class="btn-primary">返回</button>
+    </div>
+  </div>
+
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-item">
+        <span class="label">血量</span>
+        <div class="bar-wrap"><div id="health-bar" class="bar health"></div></div>
+        <span id="health-text">100</span>
+      </div>
+      <div class="hud-center">
+        <span id="wave-text">第 1 波</span>
+        <span id="score-text">击杀: 0</span>
+      </div>
+      <div class="hud-item ammo-box">
+        <span id="ammo-text">30 / 90</span>
+        <span class="label">弹药</span>
+      </div>
+    </div>
+    <div id="crosshair"></div>
+    <div id="hit-marker" class="hidden">✕</div>
+    <div id="reload-hint" class="hidden">换弹中...</div>
+    <div id="message" class="hidden"></div>
+  </div>
+
+  <div id="pause" class="screen hidden">
+    <div class="pause-panel">
+      <h2>游戏暂停</h2>
+      <button id="btn-resume" class="btn-primary">继续</button>
+      <button id="btn-menu" class="btn-secondary">主菜单</button>
+    </div>
+  </div>
+
+  <div id="gameover" class="screen hidden">
+    <div class="result-panel">
+      <h2 id="result-title">任务失败</h2>
+      <p id="result-score">击杀: 0</p>
+      <button id="btn-retry" class="btn-primary">再来一局</button>
+      <button id="btn-menu2" class="btn-secondary">主菜单</button>
+    </div>
+  </div>
+
+  <canvas id="game-canvas"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

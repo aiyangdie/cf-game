@@ -375,3 +375,26 @@ kbd {
 @keyframes pulseWarn {
   50% { opacity: 0.65; }
 }
+
+/* 屏幕外敌人方向指示 */
+#enemy-markers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 45;
+}
+
+.enemy-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 18px solid #ff2200;
+  filter: drop-shadow(0 0 6px #ff4400);
+  animation: arrowPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes arrowPulse {
+  50% { opacity: 0.5; }
+}

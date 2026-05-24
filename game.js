@@ -516,7 +516,8 @@
     }
     spawnPickups(2 + Math.floor(wave / 2));
     waveGraceUntil = performance.now() + WAVE_GRACE_MS;
-    showMessage(`第 ${wave} 波 · 拾取补给 · 1/2/3 换枪`, 2800);
+    const ver = (window.CF_CONFIG && window.CF_CONFIG.version) || "";
+    showMessage(ver ? `已加载 v${ver} · 第 ${wave} 波` : `第 ${wave} 波 · 1/2/3 换枪`, 3200);
   }
 
   function showMessage(text, duration = 2500) {

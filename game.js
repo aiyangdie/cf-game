@@ -161,6 +161,39 @@
   const sprintTag = document.getElementById("sprint-tag");
   const shopScreen = document.getElementById("upgrade-shop");
   let shopPendingWave = false;
+  let waveDmgMult = 1;
+
+  function getPickupRadius() {
+    const mult = window.CFProgression ? CFProgression.getPickupRadiusMult() : 1;
+    return PICKUP_RADIUS * mult;
+  }
+
+  function applyWavePrep(prep) {
+    if (!prep) return;
+    const parts = [];
+    if (prep.cMed > 0) {
+      const heal = prep.cMed * 50;
+      health = Math.min(getPlayerMaxHealth(), health + heal);
+      parts.push(`医疗 +${heal}`);
+    }
+    if (prep.cAmmo > 0) {
+      ["rifle", "pistol"].forEach((id) => {
+        const w = window.CFProgression
+          ? CFProgression.applyWeapon(WEAPONS[id], id)
+          : WEAPONS[id];
+        const st = weaponAmmo[id];
+        const bonus = Math.floor(w.maxReserve * 0.35 * prep.cAmmo);
+        st.reserve = Math.min(w.maxReserve, st.reserve + bonus);
+      });
+      parts.push("备弹 +35%");
+    }
+    if (prep.cStim > 0) {
+      waveDmgMult = 1 + prep.cStim * 0.15;
+      parts.push("伤害 +15%");
+    }
+    if (parts.length) showPickupToast(`波次补给：${parts.join(" · ")}`, true);
+    updateHUD();
+  }
 
   function getPlayerMaxHealth() {
     return window.CFProgression
@@ -485,7 +518,7 @@
       p.mesh.rotation.y += dt * 1.2;
       const dx = px - p.mesh.position.x;
       const dz = pz - p.mesh.position.z;
-      if (dx * dx + dz * dz < PICKUP_RADIUS * PICKUP_RADIUS) {
+      if (dx * dx + dz * dz < getPickupRadius() * getPickupRadius()) {
         collectPickup(p);
         return false;
       }
@@ -621,6 +654,7 @@
 
   function openUpgradeShop(pendingWave) {
     shopPendingWave = !!pendingWave;
+    waveDmgMult = 1;
     clearAllKeys();
     mouseDown = false;
     document.exitPointerLock();
@@ -648,6 +682,9 @@
     mouseDown = false;
     if (startWave && shopPendingWave) {
       shopPendingWave = false;
+      if (window.CFProgression) {
+        applyWavePrep(CFProgression.consumeWavePrep());
+      }
       spawnWave();
     }
     canvas.requestPointerLock();
@@ -682,8 +719,9 @@
     const xpBar = document.getElementById("xp-bar");
     if (!window.CFProgression || !gpEl) return;
     const st = CFProgression.getState();
+    const title = CFProgression.getRankTitle(st.rank);
     gpEl.textContent = `GP ${st.gp}`;
-    rankEl.textContent = `Lv.${st.rank}`;
+    rankEl.textContent = `${title} Lv.${st.rank}`;
     if (xpBar) {
       const need = st.rank * 120;
       xpBar.style.width = `${Math.min(100, (st.totalXp / need) * 100)}%`;
@@ -791,7 +829,11 @@
   }
 
   function damageEnemy(target, isHead, baseDmg, headMult) {
-    const dmg = isHead ? baseDmg * headMult : baseDmg + Math.random() * 6;
+    let dmg = isHead ? baseDmg * headMult : baseDmg + Math.random() * 6;
+    if (isHead && window.CFProgression) {
+      dmg *= CFProgression.getHeadshotDamageMult();
+    }
+    dmg *= waveDmgMult;
     target.health -= dmg;
     updateHealthBar(target.healthBar, Math.max(0, target.health / target.maxHealth));
     if (isHead) {
@@ -1025,6 +1067,10 @@
     score++;
     scene.remove(enemy.mesh);
     if (window.CFProgression) CFProgression.onKill(wasHeadshot);
+    const killHeal = window.CFProgression ? CFProgression.getKillHeal() : 0;
+    if (killHeal > 0) {
+      health = Math.min(getPlayerMaxHealth(), health + killHeal);
+    }
     updateHUD();
     if (window.CFAudio) CFAudio.play("kill");
 
@@ -1034,7 +1080,8 @@
 
     if (enemies.every((e) => !e.alive)) {
       const cleared = wave;
-      health = Math.min(getPlayerMaxHealth(), health + WAVE_HEAL);
+      const extraHeal = window.CFProgression ? CFProgression.getExtraWaveHeal() : 0;
+      health = Math.min(getPlayerMaxHealth(), health + WAVE_HEAL + extraHeal);
       if (window.CFProgression) {
         CFProgression.onWaveClear(cleared);
         CFProgression.refillMagazines(weaponAmmo, WEAPONS);
@@ -1332,6 +1379,7 @@
     score = 0;
     headshots = 0;
     wave = 1;
+    waveDmgMult = 1;
     weaponAmmo = { rifle: { ammo: 30, reserve: 90 }, pistol: { ammo: 12, reserve: 60 } };
     if (window.CFProgression) CFProgression.initWeaponAmmo(weaponAmmo, WEAPONS);
     currentWeapon = "rifle";

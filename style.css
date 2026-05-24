@@ -723,8 +723,60 @@ html.gate-locked #game-canvas {
 .shop-hint {
   font-size: 0.82rem;
   color: #667;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   flex-shrink: 0;
+}
+
+.shop-progress-wrap {
+  flex-shrink: 0;
+  margin-bottom: 0.65rem;
+}
+
+#shop-progress-text {
+  font-size: 0.75rem;
+  color: #667;
+  margin-bottom: 0.25rem;
+}
+
+#shop-progress-track {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#shop-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff7700, #ffcc44);
+  transition: width 0.3s ease;
+}
+
+.shop-status {
+  font-size: 0.8rem;
+  color: #dd5500;
+  background: rgba(255, 119, 0, 0.1);
+  border-left: 3px solid #ff7700;
+  padding: 0.45rem 0.6rem;
+  margin-bottom: 0.65rem;
+  flex-shrink: 0;
+  line-height: 1.45;
+}
+
+.shop-status.elite {
+  color: #0066aa;
+  background: rgba(0, 100, 200, 0.08);
+  border-left-color: #2288cc;
+}
+
+.shop-status.complete {
+  color: #008844;
+  background: rgba(0, 160, 80, 0.1);
+  border-left-color: #00aa44;
+}
+
+.shop-status.hidden {
+  display: none;
 }
 
 .upgrade-grid {
@@ -748,6 +800,29 @@ html.gate-locked #game-canvas {
 
 .upgrade-grid::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.shop-cat.elite { color: #2288cc; border-bottom-color: #cce8ff; }
+
+.shop-cat.honor { color: #886600; border-bottom-color: #eeddaa; }
+
+.shop-cat.supply { color: #00aa66; border-bottom-color: #c8eedd; }
+
+.shop-row.locked { opacity: 0.45; }
+
+.shop-row.consumable { background: rgba(0, 170, 100, 0.04); }
+
+.shop-lock {
+  font-size: 0.72rem;
+  color: #999;
+  margin-left: 0.25rem;
+}
+
+.shop-locked-note {
+  font-size: 0.8rem;
+  color: #778;
+  padding: 0.35rem 0 0.6rem;
+  font-style: italic;
 }
 
 .shop-cat {

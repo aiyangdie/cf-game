@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>穿越火线 · 网页版 CF</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=18">
+  <link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
   <div id="menu" class="screen active">
@@ -97,7 +97,12 @@
     <div class="help-panel shop-panel help-wide">
       <h2>军械库 · 升级</h2>
       <p id="shop-gp-text" class="shop-gp">GP 0</p>
-      <p class="shop-hint">击杀 / 爆头 / 过关获得 GP · 升级永久保存在本浏览器</p>
+      <p class="shop-hint">击杀 / 爆头 / 过关获得 GP · 基础满级解锁精英军械 · GP 可购波次补给</p>
+      <div class="shop-progress-wrap">
+        <p id="shop-progress-text"></p>
+        <div id="shop-progress-track"><div id="shop-progress-bar"></div></div>
+      </div>
+      <p id="shop-status-text" class="shop-status hidden"></p>
       <div id="upgrade-grid" class="upgrade-grid"></div>
       <div class="shop-actions">
         <button id="btn-shop-next" class="btn-primary">下一波 (Enter)</button>
@@ -120,9 +125,9 @@
   <script src="config.js"></script>
   <script src="gate.js"></script>
   <script src="audio.js"></script>
-  <script src="progression.js"></script>
+  <script src="progression.js?v=19"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="game.js?v=18"></script>
+  <script src="game.js?v=19"></script>
   <script>
     (function () {
       var c = window.CF_CONFIG || {};

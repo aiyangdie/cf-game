@@ -12,6 +12,6 @@ window.CF_CONFIG = {
   },
   /** 显示在主菜单版本标签 */
   siteName: "CF Web Edition",
-  version: "1.1.2",
-  build: "20260524-2",
+  version: "1.2.0",
+  build: "20260524-0",
 };

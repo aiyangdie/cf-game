@@ -3,6 +3,7 @@ Thumbs.db
 *.log
 node_modules/
 dist/
+.cursor/
 .env
 .env.*
 

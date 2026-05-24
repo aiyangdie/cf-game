@@ -83,6 +83,9 @@
   const moveDir = new THREE.Vector3();
   const tmpVec = new THREE.Vector3();
   const shootDir = new THREE.Vector3();
+  const losOrigin = new THREE.Vector3();
+  const losTarget = new THREE.Vector3();
+  const losDir = new THREE.Vector3();
 
   const canvas = document.getElementById("game-canvas");
   const menu = document.getElementById("menu");
@@ -268,7 +271,7 @@
     weaponsGroup.add(muzzleFlash);
     camera.add(weaponsGroup);
     scene.add(camera);
-    switchWeapon("rifle", true);
+    applyWeaponVisual("rifle");
   }
 
   function applyWeaponVisual(id) {
@@ -348,7 +351,7 @@
     glow.position.y = 0.05;
     group.add(glow);
 
-    const pickup = { mesh: group, type, alive: true, phase: Math.random() * Math.PI * 2 };
+    const pickup = { mesh: group, type, alive: true, phase: Math.random() * Math.PI * 2, baseY: 0 };
     scene.add(group);
     pickups.push(pickup);
     return pickup;
@@ -357,7 +360,7 @@
   function spawnPickups(count) {
     const types = ["health", "ammo", "ammo", "health"];
     const spots = [
-      [0, 0], [-6, 6], [6, -6], [-8, -3], [8, 3], [0, 12], [-12, 0], [12, 0],
+      [-6, 6], [6, -6], [-8, -3], [8, 3], [0, 12], [-12, 0], [12, 0], [5, 5],
     ];
     for (let i = 0; i < count; i++) {
       const [bx, bz] = spots[i % spots.length];
@@ -396,7 +399,8 @@
     pickups = pickups.filter((p) => {
       if (!p.alive) return false;
       p.phase += dt * 3;
-      p.mesh.position.y = Math.sin(p.phase) * 0.08;
+      const baseY = p.baseY || 0;
+      p.mesh.position.y = baseY + Math.sin(p.phase) * 0.08;
       p.mesh.rotation.y += dt * 1.2;
       const dx = px - p.mesh.position.x;
       const dz = pz - p.mesh.position.z;
@@ -458,6 +462,7 @@
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.06;
+    ring.raycast = function () {};
     group.add(ring);
 
     const body = new THREE.Mesh(
@@ -498,6 +503,7 @@
   }
 
   function spawnWave() {
+    enemies = enemies.filter((e) => e.alive);
     const count = Math.min(3 + Math.floor(wave * 1.1), 10);
     const spawns = [
       [-20, -20], [20, -20], [-20, 20], [20, 20],
@@ -643,19 +649,23 @@
     if (!wep.melee) return null;
     let best = null;
     let bestDist = range;
+    let bestHead = false;
     enemies.forEach((e) => {
       if (!e.alive) return;
       const pos = e.mesh.position;
       const dx = camera.position.x - pos.x;
       const dz = camera.position.z - pos.z;
       const d = Math.sqrt(dx * dx + dz * dz);
-      if (d < bestDist && hasLineOfSight(pos, camera.position)) {
-        bestDist = d;
-        best = e;
-      }
+      if (d >= bestDist || !hasLineOfSight(pos, camera.position)) return;
+      bestDist = d;
+      best = e;
+      camera.getWorldDirection(shootDir);
+      const toHeadY = (pos.y + 2.15) - camera.position.y;
+      const aimY = shootDir.y;
+      bestHead = aimY > 0.05 && toHeadY > 0.8 && d < 2.6;
     });
     if (!best) return null;
-    return { target: best, isHead: false, hitCover: false };
+    return { target: best, isHead: bestHead, hitCover: false };
   }
 
   function attack() {
@@ -731,12 +741,13 @@
   }
 
   function hasLineOfSight(from, to) {
-    const origin = tmpVec.set(from.x, 1.5, from.z);
-    const target = new THREE.Vector3(to.x, 1.5, to.z);
-    const dir = target.clone().sub(origin);
-    const dist = dir.length();
-    dir.normalize();
-    raycaster.set(origin, dir);
+    losOrigin.set(from.x, 1.5, from.z);
+    losTarget.set(to.x, 1.5, to.z);
+    losDir.subVectors(losTarget, losOrigin);
+    const dist = losDir.length();
+    if (dist < 0.01) return true;
+    losDir.normalize();
+    raycaster.set(losOrigin, losDir);
     raycaster.far = dist - 0.25;
     return raycaster.intersectObjects(coverMeshes, false).length === 0;
   }
@@ -836,6 +847,8 @@
   }
 
   function endGame(won) {
+    clearTimers();
+    mouseDown = false;
     gameState = "gameover";
     document.exitPointerLock();
     hud.classList.add("hidden");
@@ -886,6 +899,8 @@
       alert("游戏资源加载失败，请检查网络后刷新页面（需要加载 Three.js）");
       return;
     }
+    if (gameState === "playing") return;
+    cancelAnimationFrame(animId);
     if (!scene) initThree();
     resetGame();
     gameState = "playing";
@@ -990,7 +1005,9 @@
   document.getElementById("btn-menu").addEventListener("click", returnToMenu);
 
   document.querySelectorAll(".wslot").forEach((el) => {
-    el.addEventListener("click", () => {
+    el.addEventListener("mousedown", (e) => e.stopPropagation());
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
       if (gameState === "playing") switchWeapon(el.dataset.w);
     });
   });
@@ -1006,6 +1023,7 @@
     if (e.key === "3") switchWeapon("knife");
     if (e.key === "r" || e.key === "R") startReload();
     if (e.key === "Escape") {
+      clearTimers();
       gameState = "pause";
       mouseDown = false;
       document.exitPointerLock();
@@ -1030,8 +1048,13 @@
     }
   });
 
+  function isUiClick(target) {
+    return !!target.closest("#weapon-bar");
+  }
+
   document.addEventListener("mousedown", (e) => {
     if (e.button !== 0 || gameState !== "playing") return;
+    if (isUiClick(e.target)) return;
     mouseDown = true;
     if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
     attack();

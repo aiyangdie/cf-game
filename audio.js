@@ -103,6 +103,10 @@
     pause() {
       tone(350, 0.08, "sine", 0.06, 0.08);
     },
+    enemyShot() {
+      noiseBurst(0.04, 0.07, 900);
+      tone(140, 0.04, "square", 0.04, 0.04);
+    },
     jump() {
       tone(280, 0.06, "sine", 0.05, 0.06);
     },

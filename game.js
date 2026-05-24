@@ -17,6 +17,9 @@
   const INVINCIBLE_MS = 1200;
   const WAVE_GRACE_MS = 2800;
   const ENEMY_BASE_DAMAGE = 5;
+  const BULLET_PLAYER_SPEED = 130;
+  const BULLET_PISTOL_SPEED = 100;
+  const BULLET_ENEMY_SPEED = 82;
   const PLAYER_RADIUS = 0.45;
   const ENEMY_RADIUS = 0.5;
   const MOUSE_SENS = 0.0018;
@@ -104,6 +107,7 @@
   let wasOnGround = true;
   let hitSparks = [];
   let tracers = [];
+  let bullets = [];
   let velY = 0;
   let eyeY = EYE_HEIGHT;
   let onGround = true;
@@ -506,8 +510,12 @@
   }
 
   function createEnemy(x, z) {
+    const stats = getWaveStats(wave);
+    const tier = stats.tier;
     const group = new THREE.Group();
     group.position.set(x, 0, z);
+    if (tier >= 1) group.scale.setScalar(1 + tier * 0.06);
+
     const hitbox = new THREE.Mesh(
       new THREE.BoxGeometry(1.1, 2.5, 1.1),
       new THREE.MeshBasicMaterial({ visible: false })
@@ -519,16 +527,23 @@
 
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.7, 0.95, 24),
-      new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+      new THREE.MeshBasicMaterial({
+        color: tier >= 2 ? 0xff4400 : 0xff0000,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.9,
+      })
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.06;
     ring.raycast = function () {};
     group.add(ring);
 
+    const bodyColor = tier === 0 ? 0xff1111 : tier === 1 ? 0xcc0022 : 0x990033;
+    const emissive = tier === 0 ? 0xaa0000 : tier === 1 ? 0x880022 : 0x660033;
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(0.85, 1.45, 0.55),
-      new THREE.MeshLambertMaterial({ color: 0xff1111, emissive: 0xaa0000 })
+      new THREE.MeshLambertMaterial({ color: bodyColor, emissive })
     );
     body.position.y = 1.35;
     group.add(body);
@@ -544,15 +559,17 @@
     const hb = createHealthBarSprite();
     group.add(hb.sprite);
 
-    const hp = Math.floor(24 + wave * 5);
+    const hp = stats.hp;
     const enemy = {
       mesh: group,
       healthBar: hb,
       health: hp,
       maxHealth: hp,
+      tier,
       lastShot: performance.now() + Math.random() * 1500,
-      shootCooldown: 1500 + Math.random() * 800,
-      speed: 1.6 + wave * 0.1,
+      shootCooldown: stats.shootCooldown * (0.82 + Math.random() * 0.36),
+      aimTimeRequired: stats.aimTime,
+      speed: stats.speed * (0.92 + Math.random() * 0.16),
       alive: true,
       aiming: false,
       aimStart: 0,
@@ -565,7 +582,8 @@
 
   function spawnWave() {
     enemies = enemies.filter((e) => e.alive);
-    const count = Math.min(3 + Math.floor(wave * 1.1), 10);
+    const stats = getWaveStats(wave);
+    const count = stats.spawnCount;
     const spawns = [
       [-20, -20], [20, -20], [-20, 20], [20, 20],
       [0, -22], [-22, 0], [22, 0], [0, 22],
@@ -578,7 +596,11 @@
     spawnPickups(2 + Math.floor(wave / 2));
     waveGraceUntil = performance.now() + WAVE_GRACE_MS;
     const ver = (window.CF_CONFIG && window.CF_CONFIG.version) || "";
-    showMessage(ver ? `已加载 v${ver} · 第 ${wave} 波` : `第 ${wave} 波 · 1/2/3 换枪`, 3200);
+    const tierHint = stats.tier >= 1 ? ` · ${stats.tierName}出现` : "";
+    showMessage(
+      ver ? `v${ver} · 第 ${wave} 波${tierHint} · ${count} 敌人` : `第 ${wave} 波 · ${count} 敌人`,
+      3200
+    );
   }
 
   function showMessage(text, duration = 2500) {
@@ -720,7 +742,7 @@
         t.line.material.dispose();
         return false;
       }
-      t.line.material.opacity = t.life / 0.07;
+      t.line.material.opacity = t.life / 0.12;
       return true;
     });
   }
@@ -731,11 +753,10 @@
       color: 0xffdd66,
       transparent: true,
       opacity: 0.95,
-      linewidth: 2,
     });
     const line = new THREE.Line(geo, mat);
     scene.add(line);
-    tracers.push({ line, life: 0.07 });
+    tracers.push({ line, life: 0.12 });
   }
 
   function kickCrosshair() {
@@ -900,7 +921,14 @@
 
     const res = raycastAttack(wep.range);
     camera.getWorldPosition(shootOrigin);
-    spawnTracer(shootOrigin, tracerEndPoint(wep.range, res && res.point));
+    const endPoint = tracerEndPoint(wep.range, res && res.point);
+    spawnFlyingBullet(shootOrigin.clone(), endPoint, {
+      isEnemy: false,
+      speed: currentWeapon === "pistol" ? BULLET_PISTOL_SPEED : BULLET_PLAYER_SPEED,
+      color: currentWeapon === "pistol" ? 0xffcc44 : 0xffee66,
+      size: currentWeapon === "pistol" ? 0.038 : 0.045,
+    });
+    spawnTracer(shootOrigin, endPoint);
     if (res && res.point) spawnHitSpark(res.point);
     if (res && res.target && !res.hitCover) {
       damageEnemy(res.target, res.isHead, wep.damage, wep.headMult);
@@ -955,12 +983,145 @@
     return raycaster.intersectObjects(coverMeshes, false).length === 0;
   }
 
-  function getEnemyHitChance(dist) {
-    if (dist > 28) return 0;
-    if (dist > 18) return 0.1;
-    if (dist > 10) return 0.2;
-    if (dist > 5) return 0.3;
-    return 0.38;
+  function getWaveStats(w) {
+    const tier = w <= 3 ? 0 : w <= 7 ? 1 : 2;
+    const hpBase = Math.floor(26 + w * 7 + Math.floor(w / 4) * 8);
+    const hpMult = tier === 0 ? 1 : tier === 1 ? 1.18 : 1.38;
+    return {
+      tier,
+      tierName: tier === 0 ? "新兵" : tier === 1 ? "老兵" : "精英",
+      hp: Math.floor(hpBase * hpMult),
+      speed: Math.min(4.6, 1.5 + w * 0.12 + tier * 0.15),
+      shootCooldown: Math.max(480, 1550 - w * 62 - tier * 80),
+      aimTime: Math.max(220, 540 - w * 17 - tier * 40),
+      damage: ENEMY_BASE_DAMAGE + Math.floor(w * 0.7) + tier * 2,
+      spawnCount: Math.min(14, 3 + Math.floor(w * 1.15 + Math.sqrt(w))),
+    };
+  }
+
+  function getEnemyHitChance(dist, w) {
+    if (dist > 32) return 0;
+    let base;
+    if (dist > 24) base = 0.07;
+    else if (dist > 16) base = 0.15;
+    else if (dist > 9) base = 0.26;
+    else if (dist > 5) base = 0.36;
+    else base = 0.46;
+    const stats = getWaveStats(w);
+    return Math.min(0.68, base + w * 0.011 + stats.tier * 0.04);
+  }
+
+  function clearBullets() {
+    bullets.forEach((b) => {
+      scene.remove(b.mesh);
+      scene.remove(b.trail);
+      b.trail.geometry.dispose();
+      b.trail.material.dispose();
+    });
+    bullets = [];
+  }
+
+  function spawnFlyingBullet(from, to, opts) {
+    const totalDist = from.distanceTo(to);
+    if (totalDist < 0.08) return;
+
+    const color = opts.color || 0xffee55;
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(opts.size || 0.04, 6, 6),
+      new THREE.MeshBasicMaterial({ color })
+    );
+    mesh.position.copy(from);
+    scene.add(mesh);
+
+    const trailGeo = new THREE.BufferGeometry().setFromPoints([from.clone(), from.clone()]);
+    const trailMat = new THREE.LineBasicMaterial({
+      color,
+      transparent: true,
+      opacity: opts.isEnemy ? 0.75 : 0.9,
+    });
+    const trail = new THREE.Line(trailGeo, trailMat);
+    scene.add(trail);
+
+    bullets.push({
+      mesh,
+      trail,
+      from: from.clone(),
+      end: to.clone(),
+      totalDist,
+      traveled: 0,
+      speed: opts.speed || 100,
+      isEnemy: !!opts.isEnemy,
+      willHit: !!opts.willHit,
+      damage: opts.damage || 0,
+    });
+  }
+
+  function updateBullets(dt) {
+    bullets = bullets.filter((b) => {
+      b.traveled += b.speed * dt;
+      const t = Math.min(1, b.traveled / b.totalDist);
+      b.mesh.position.lerpVectors(b.from, b.end, t);
+
+      const posAttr = b.trail.geometry.attributes.position;
+      posAttr.setXYZ(0, b.from.x, b.from.y, b.from.z);
+      posAttr.setXYZ(1, b.mesh.position.x, b.mesh.position.y, b.mesh.position.z);
+      posAttr.needsUpdate = true;
+      b.trail.material.opacity = (b.isEnemy ? 0.75 : 0.9) * (1 - t * 0.35);
+
+      if (t < 1) return true;
+
+      if (b.isEnemy && b.willHit) playerTakeDamage(b.damage);
+      spawnHitSpark(b.mesh.position);
+      scene.remove(b.mesh);
+      scene.remove(b.trail);
+      b.trail.geometry.dispose();
+      b.trail.material.dispose();
+      return false;
+    });
+  }
+
+  function enemyFire(enemy, dist) {
+    const pos = enemy.mesh.position;
+    const stats = getWaveStats(wave);
+    const muzzle = losOrigin.set(pos.x, 1.42, pos.z);
+    enemy.mesh.getWorldDirection(losDir);
+    muzzle.add(losDir.multiplyScalar(0.55));
+
+    const aimPos = losTarget.set(camera.position.x, 1.45, camera.position.z);
+    losDir.subVectors(aimPos, muzzle);
+    const fullDist = losDir.length();
+    losDir.normalize();
+
+    raycaster.set(muzzle, losDir, 0, fullDist);
+    const coverHit = raycaster.intersectObjects(coverMeshes, false)[0];
+
+    const hitRoll = Math.random() < getEnemyHitChance(dist, wave);
+    let endPoint = aimPos.clone();
+    let willHit = hitRoll;
+
+    if (coverHit && coverHit.distance < fullDist - 0.4) {
+      endPoint = coverHit.point.clone();
+      willHit = false;
+    } else if (!hitRoll) {
+      endPoint.x += (Math.random() - 0.5) * 2.8;
+      endPoint.z += (Math.random() - 0.5) * 2.8;
+      endPoint.y = 1.1 + Math.random() * 0.6;
+      willHit = false;
+    }
+
+    const falloff = THREE.MathUtils.lerp(1, 0.5, dist / 30);
+    const damage = stats.damage * falloff * (0.88 + Math.random() * 0.24);
+
+    spawnFlyingBullet(muzzle.clone(), endPoint, {
+      isEnemy: true,
+      speed: BULLET_ENEMY_SPEED + stats.tier * 6,
+      color: stats.tier >= 2 ? 0xff2200 : 0xff5522,
+      size: 0.06 + stats.tier * 0.015,
+      willHit,
+      damage,
+    });
+
+    if (window.CFAudio) CFAudio.play("enemyShot");
   }
 
   function playerTakeDamage(amount) {
@@ -1009,14 +1170,11 @@
         enemy.aimStart = now;
         return;
       }
-      if (now - enemy.aimStart < 550) return;
+      if (now - enemy.aimStart < enemy.aimTimeRequired) return;
       if (now - enemy.lastShot < enemy.shootCooldown) return;
       enemy.lastShot = now;
       enemy.aiming = false;
-      if (Math.random() < getEnemyHitChance(dist)) {
-        const falloff = THREE.MathUtils.lerp(1, 0.5, dist / 28);
-        playerTakeDamage(ENEMY_BASE_DAMAGE * falloff * (0.9 + Math.random() * 0.2));
-      }
+      enemyFire(enemy, dist);
     });
   }
 
@@ -1083,6 +1241,7 @@
       t.line.material.dispose();
     });
     tracers = [];
+    clearBullets();
     clearAllKeys();
     enemies.forEach((e) => scene.remove(e.mesh));
     enemies = [];
@@ -1213,6 +1372,7 @@
     updatePickups(dt);
     updateHitSparks(dt);
     updateTracers(dt);
+    updateBullets(dt);
     enemyAI(dt, now);
     updateEnemyScreenMarkers();
 
@@ -1228,6 +1388,7 @@
     if (gameState !== "playing") return;
     clearTimers();
     clearAllKeys();
+    clearBullets();
     mouseDown = false;
     gameState = "pause";
     document.exitPointerLock();

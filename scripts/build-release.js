@@ -16,6 +16,7 @@ const INCLUDE = [
   "index.html",
   "game.js",
   "audio.js",
+  "progression.js",
   "style.css",
   "favicon.svg",
   "gate.js",

@@ -132,8 +132,13 @@
 
   function getMoveSpeed() {
     let speed = MOVE_SPEED;
-    if (isSprinting()) speed *= SPRINT_MULT;
-    else if (isKey("KeyS") && !isKey("KeyW")) speed *= BACKWARD_MULT;
+    if (window.CFProgression) speed *= CFProgression.getSpeedMult();
+    if (isSprinting()) {
+      const sm = window.CFProgression
+        ? CFProgression.getSprintMult(SPRINT_MULT)
+        : SPRINT_MULT;
+      speed *= sm;
+    } else if (isKey("KeyS") && !isKey("KeyW")) speed *= BACKWARD_MULT;
     if (!onGround) speed *= AIR_CONTROL;
     return speed;
   }
@@ -154,9 +159,20 @@
   const enemyMarkers = document.getElementById("enemy-markers");
   const crosshair = document.getElementById("crosshair");
   const sprintTag = document.getElementById("sprint-tag");
+  const shopScreen = document.getElementById("upgrade-shop");
+  let shopPendingWave = false;
+
+  function getPlayerMaxHealth() {
+    return window.CFProgression
+      ? CFProgression.getMaxHealth(PLAYER_MAX_HEALTH)
+      : PLAYER_MAX_HEALTH;
+  }
 
   function getWep() {
-    return WEAPONS[currentWeapon];
+    const base = WEAPONS[currentWeapon];
+    return window.CFProgression
+      ? CFProgression.applyWeapon(base, currentWeapon)
+      : base;
   }
 
   function getAmmoState() {
@@ -439,7 +455,7 @@
     scene.remove(p.mesh);
     if (p.type === "health") {
       const before = health;
-      health = Math.min(PLAYER_MAX_HEALTH, health + 45);
+      health = Math.min(getPlayerMaxHealth(), health + 45);
       showPickupToast(`+${Math.ceil(health - before)} 生命`);
       if (window.CFAudio) CFAudio.play("pickup");
     } else {
@@ -603,6 +619,47 @@
     );
   }
 
+  function openUpgradeShop(pendingWave) {
+    shopPendingWave = !!pendingWave;
+    gameState = "shop";
+    clearAllKeys();
+    mouseDown = false;
+    document.exitPointerLock();
+    if (window.CFProgression) {
+      CFProgression.renderShop(
+        document.getElementById("upgrade-grid"),
+        (msg, ok) => showPickupToast(msg, ok)
+      );
+    }
+    if (shopScreen) {
+      shopScreen.classList.remove("hidden");
+      shopScreen.classList.add("active");
+    }
+    updateProgHUD();
+  }
+
+  function closeUpgradeShop(startWave) {
+    if (shopScreen) {
+      shopScreen.classList.add("hidden");
+      shopScreen.classList.remove("active");
+    }
+    gameState = "playing";
+    clearAllKeys();
+    mouseDown = false;
+    if (startWave && shopPendingWave) {
+      shopPendingWave = false;
+      spawnWave();
+    }
+    canvas.requestPointerLock();
+    lastTime = performance.now();
+  }
+
+  function canOpenShop() {
+    return gameState === "playing"
+      && enemies.length > 0
+      && enemies.every((e) => !e.alive);
+  }
+
   function showMessage(text, duration = 2500) {
     const el = document.getElementById("message");
     el.textContent = text;
@@ -618,12 +675,28 @@
     document.getElementById("headshot-popup").classList.remove("show");
   }
 
+  function updateProgHUD() {
+    const gpEl = document.getElementById("gp-text");
+    const rankEl = document.getElementById("rank-text");
+    const xpBar = document.getElementById("xp-bar");
+    if (!window.CFProgression || !gpEl) return;
+    const st = CFProgression.getState();
+    gpEl.textContent = `GP ${st.gp}`;
+    rankEl.textContent = `Lv.${st.rank}`;
+    if (xpBar) {
+      const need = st.rank * 120;
+      xpBar.style.width = `${Math.min(100, (st.totalXp / need) * 100)}%`;
+    }
+  }
+
   function updateHUD() {
-    const pct = Math.max(0, (health / PLAYER_MAX_HEALTH) * 100);
+    const maxHp = getPlayerMaxHealth();
+    const pct = Math.max(0, (health / maxHp) * 100);
     document.getElementById("health-bar").style.width = `${pct}%`;
     document.getElementById("health-text").textContent = Math.max(0, Math.ceil(health));
     document.getElementById("score-text").textContent = `击杀: ${score} · 爆头: ${headshots}`;
     document.getElementById("wave-text").textContent = `第 ${wave} 波`;
+    updateProgHUD();
 
     const wep = getWep();
     document.getElementById("weapon-name").textContent = wep.name;
@@ -950,6 +1023,7 @@
     enemy.alive = false;
     score++;
     scene.remove(enemy.mesh);
+    if (window.CFProgression) CFProgression.onKill(wasHeadshot);
     updateHUD();
     if (window.CFAudio) CFAudio.play("kill");
 
@@ -959,15 +1033,17 @@
 
     if (enemies.every((e) => !e.alive)) {
       const cleared = wave;
-      health = Math.min(PLAYER_MAX_HEALTH, health + WAVE_HEAL);
+      health = Math.min(getPlayerMaxHealth(), health + WAVE_HEAL);
+      if (window.CFProgression) {
+        CFProgression.onWaveClear(cleared);
+        CFProgression.refillMagazines(weaponAmmo, WEAPONS);
+      }
       updateHUD();
-      showMessage(`第 ${cleared} 波完成！+${WAVE_HEAL} HP`, 2400);
+      showMessage(`第 ${cleared} 波清场！+${WAVE_HEAL} HP · 军械库开放`, 2800);
       if (window.CFAudio) CFAudio.play("wave");
       wave++;
       clearTimeout(waveTimerId);
-      waveTimerId = setTimeout(() => {
-        if (gameState === "playing") spawnWave();
-      }, 2400);
+      openUpgradeShop(true);
     }
   }
 
@@ -1127,7 +1203,11 @@
   function playerTakeDamage(amount) {
     const now = performance.now();
     if (now < invincibleUntil) return;
-    health -= amount;
+    let dmg = amount;
+    if (window.CFProgression) {
+      dmg *= 1 - CFProgression.getDamageReduction();
+    }
+    health -= dmg;
     invincibleUntil = now + INVINCIBLE_MS;
     updateHUD();
     damageOverlay.classList.add("flash");
@@ -1220,7 +1300,8 @@
     gameoverScreen.classList.add("active");
     document.getElementById("result-title").textContent = won ? "任务完成！" : "阵亡";
     document.getElementById("result-score").textContent =
-      `击杀 ${score} · 爆头 ${headshots} · 第 ${wave} 波`;
+      `击杀 ${score} · 爆头 ${headshots} · 第 ${wave} 波` +
+      (window.CFProgression ? ` · GP ${CFProgression.getState().gp}` : "");
     cancelAnimationFrame(animId);
   }
 
@@ -1246,11 +1327,12 @@
     enemies.forEach((e) => scene.remove(e.mesh));
     enemies = [];
     clearPickups();
-    health = PLAYER_MAX_HEALTH;
+    health = getPlayerMaxHealth();
     score = 0;
     headshots = 0;
     wave = 1;
     weaponAmmo = { rifle: { ammo: 30, reserve: 90 }, pistol: { ammo: 12, reserve: 60 } };
+    if (window.CFProgression) CFProgression.initWeaponAmmo(weaponAmmo, WEAPONS);
     currentWeapon = "rifle";
     cancelReload();
     applyWeaponVisual("rifle");
@@ -1269,6 +1351,8 @@
     yaw = 0;
     pitch = 0;
     hideTransientHud();
+    if (shopScreen) shopScreen.classList.add("hidden");
+    shopPendingWave = false;
     updateHUD();
     spawnWave();
   }
@@ -1287,6 +1371,15 @@
     menu.classList.add("hidden");
     hud.classList.remove("hidden");
     if (window.CFAudio) CFAudio.init();
+    if (window.CFProgression) {
+      CFProgression.setOnChange(() => {
+        updateProgHUD();
+        if (gameState === "shop") {
+          CFProgression.refillMagazines(weaponAmmo, WEAPONS);
+          updateHUD();
+        }
+      });
+    }
     canvas.requestPointerLock();
     lastTime = performance.now();
     animate();
@@ -1434,6 +1527,11 @@
     gameoverScreen.classList.remove("active");
     pauseScreen.classList.add("hidden");
     pauseScreen.classList.remove("active");
+    if (shopScreen) {
+      shopScreen.classList.add("hidden");
+      shopScreen.classList.remove("active");
+    }
+    shopPendingWave = false;
     help.classList.remove("active");
     menu.classList.remove("hidden");
     menu.classList.add("active");
@@ -1450,6 +1548,9 @@
   });
   document.getElementById("btn-menu2").addEventListener("click", returnToMenu);
   document.getElementById("btn-menu").addEventListener("click", returnToMenu);
+
+  const btnShopNext = document.getElementById("btn-shop-next");
+  if (btnShopNext) btnShopNext.addEventListener("click", () => closeUpgradeShop(true));
 
   document.querySelectorAll(".wslot").forEach((el) => {
     el.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -1482,6 +1583,15 @@
       if (e.code === "Space") {
         e.preventDefault();
         if (!e.repeat) tryJump();
+      }
+      if (e.code === "KeyB" && canOpenShop()) {
+        e.preventDefault();
+        openUpgradeShop(true);
+      }
+    } else if (gameState === "shop") {
+      if (e.code === "KeyB" || e.code === "Enter") {
+        e.preventDefault();
+        closeUpgradeShop(true);
       }
     } else if (gameState === "pause") {
       if (e.code === "Escape" || e.code === "KeyP") {

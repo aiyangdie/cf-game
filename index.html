@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>穿越火线 · 网页版 CF</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
   <div id="menu" class="screen active">
@@ -34,9 +34,10 @@
         <li><kbd>Space</kbd> 跳跃 · <kbd>点击画面</kbd> 锁定鼠标 · <kbd>左键</kbd> 攻击</li>
         <li><kbd>1</kbd> AK47步枪 · <kbd>2</kbd> 沙鹰手枪 · <kbd>3</kbd> 军刀</li>
         <li><kbd>R</kbd> 换弹 · <kbd>ESC</kbd> / <kbd>P</kbd> 暂停</li>
-        <li><kbd>M</kbd> 开关音效</li>
+        <li><kbd>M</kbd> 开关音效 · <kbd>B</kbd> 军械库</li>
       </ul>
-      <p>地图上的 <span class="hint-green">绿色十字</span> 补血，<span class="hint-orange">橙色箱子</span> 补弹。爆头有专属音效。Shift 卡住时按 ESC 暂停再恢复。</p>
+      <p>击杀赚 GP 和军衔经验。每波清场后进入<strong>军械库</strong>升级武器、防弹衣、弹匣等（进度保存在浏览器）。</p>
+      <p><span class="hint-green">绿色十字</span> 补血 · <span class="hint-orange">橙色箱子</span> 补弹 · 爆头奖励更多 GP</p>
       <button id="btn-back" class="btn-primary">返回</button>
     </div>
   </div>
@@ -51,6 +52,8 @@
       <div class="hud-center">
         <span id="wave-text">第 1 波</span>
         <span id="score-text">击杀: 0</span>
+        <span id="prog-mini"><span id="rank-text">Lv.1</span> · <span id="gp-text">GP 0</span></span>
+        <div id="xp-bar-wrap"><div id="xp-bar"></div></div>
       </div>
       <div class="hud-item ammo-box">
         <span id="weapon-name">AK47</span>
@@ -89,6 +92,17 @@
     </div>
   </div>
 
+  <div id="upgrade-shop" class="screen hidden">
+    <div class="shop-panel help-wide">
+      <h2>军械库 · 升级</h2>
+      <p id="shop-gp-text" class="shop-gp">GP 0</p>
+      <p class="shop-hint">击杀 / 爆头 / 过关获得 GP · 升级永久保存在本浏览器</p>
+      <div id="upgrade-grid" class="upgrade-grid"></div>
+      <div class="shop-actions">
+        <button id="btn-shop-next" class="btn-primary">下一波 (Enter)</button>
+      </div>
+    </div>
+  
   <div id="gameover" class="screen hidden">
     <div class="result-panel">
       <h2 id="result-title">任务失败</h2>
@@ -103,8 +117,9 @@
   <script src="config.js"></script>
   <script src="gate.js"></script>
   <script src="audio.js"></script>
+  <script src="progression.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="game.js?v=15"></script>
+  <script src="game.js?v=16"></script>
   <script>
     (function () {
       var c = window.CF_CONFIG || {};

@@ -621,7 +621,6 @@
 
   function openUpgradeShop(pendingWave) {
     shopPendingWave = !!pendingWave;
-    gameState = "shop";
     clearAllKeys();
     mouseDown = false;
     document.exitPointerLock();
@@ -635,6 +634,7 @@
       shopScreen.classList.remove("hidden");
       shopScreen.classList.add("active");
     }
+    gameState = "shop";
     updateProgHUD();
   }
 
@@ -652,6 +652,7 @@
     }
     canvas.requestPointerLock();
     lastTime = performance.now();
+    if (!animId) animate();
   }
 
   function canOpenShop() {
@@ -1448,8 +1449,14 @@
   }
 
   function animate() {
-    if (gameState !== "playing") return;
     animId = requestAnimationFrame(animate);
+    if (gameState !== "playing") {
+      if (gameState === "shop" && renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+      updateLockHint();
+      return;
+    }
 
     const now = performance.now();
     const dt = Math.min((now - lastTime) / 1000, 0.033);
@@ -1475,6 +1482,14 @@
     }
 
     renderer.render(scene, camera);
+    updateLockHint();
+  }
+
+  function updateLockHint() {
+    const el = document.getElementById("lock-overlay");
+    if (!el) return;
+    const show = gameState === "playing" && !pointerLocked;
+    el.classList.toggle("hidden", !show);
   }
 
   function pauseGame() {
@@ -1501,6 +1516,14 @@
     canvas.requestPointerLock();
     lastTime = performance.now();
     animate();
+  }
+
+  const lockOverlay = document.getElementById("lock-overlay");
+  if (lockOverlay) {
+    lockOverlay.addEventListener("click", () => {
+      if (gameState !== "playing") return;
+      canvas.requestPointerLock();
+    });
   }
 
   document.getElementById("btn-start").addEventListener("click", startGame);
@@ -1635,6 +1658,7 @@
       mouseDown = false;
       clearAllKeys();
     }
+    updateLockHint();
   });
 
   window.addEventListener("resize", () => {

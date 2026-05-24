@@ -38,7 +38,10 @@ fs.mkdirSync(stageDir, { recursive: true });
 
 INCLUDE.forEach((file) => {
   const src = path.join(ROOT, file);
-  if (fs.existsSync(src)) fs.copyFileSync(src, path.join(stageDir, file));
+  if (!fs.existsSync(src)) return;
+  const dest = path.join(stageDir, file);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
 });
 
 const zipPath = path.join(distDir, `${outName}.zip`);

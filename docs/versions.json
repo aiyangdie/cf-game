@@ -1,6 +1,14 @@
 {
-  "current": "1.1.0",
+  "current": "1.1.1",
   "releases": [
+    {
+      "version": "1.1.1",
+      "date": "2026-05-24",
+      "build": "20260524-1",
+      "cache": 17,
+      "gitTag": "v1.1.1",
+      "summary": "修复军械库后冻结、鼠标锁定提示与 HTML 结构"
+    },
     {
       "version": "1.1.0",
       "date": "2026-05-24",

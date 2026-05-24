@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>穿越火线 · 网页版 CF</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
   <div id="menu" class="screen active">
@@ -77,6 +77,7 @@
     <div id="low-health-warn" class="hidden">生命值过低 — 快找掩体！</div>
     <div id="enemy-markers"></div>
     <div id="sprint-tag" class="hidden">冲刺</div>
+    <div id="lock-overlay" class="hidden">点击画面锁定鼠标 · 方可移动视角与射击</div>
   </div>
 
   <div id="pause" class="screen hidden">
@@ -102,7 +103,8 @@
         <button id="btn-shop-next" class="btn-primary">下一波 (Enter)</button>
       </div>
     </div>
-  
+  </div>
+
   <div id="gameover" class="screen hidden">
     <div class="result-panel">
       <h2 id="result-title">任务失败</h2>
@@ -119,7 +121,7 @@
   <script src="audio.js"></script>
   <script src="progression.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="game.js?v=16"></script>
+  <script src="game.js?v=17"></script>
   <script>
     (function () {
       var c = window.CF_CONFIG || {};

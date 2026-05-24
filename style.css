@@ -308,6 +308,24 @@ kbd {
   100% { transform: translate(-50%, -50%) scale(1); }
 }
 
+#lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 1rem 2rem;
+  z-index: 55;
+  letter-spacing: 0.04em;
+}
+
 #sprint-tag {
   position: absolute;
   bottom: 5rem;

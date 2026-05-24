@@ -31,7 +31,7 @@
         <li><kbd>Shift</kbd> 冲刺</li>
         <li><kbd>ESC</kbd> 暂停 / 返回菜单</li>
       </ul>
-      <p>消灭所有敌人即可过关，注意弹药和血量！</p>
+      <p>躲在箱子/沙袋后面可避免被击中。每波结束自动回血。爆头伤害更高。</p>
       <button id="btn-back" class="btn-primary">返回</button>
     </div>
   </div>
@@ -56,6 +56,9 @@
     <div id="hit-marker" class="hidden">✕</div>
     <div id="reload-hint" class="hidden">换弹中...</div>
     <div id="message" class="hidden"></div>
+    <div id="damage-overlay"></div>
+    <div id="low-health-warn" class="hidden">生命值过低 — 快找掩体！</div>
+    <div id="wave-grace-hint" class="hidden">准备阶段 · 敌人即将出现</div>
   </div>
 
   <div id="pause" class="screen hidden">

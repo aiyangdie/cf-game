@@ -7,8 +7,8 @@
 body {
   overflow: hidden;
   font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
-  background: #0a0a0a;
-  color: #fff;
+  background: #e8f0f8;
+  color: #1a2838;
   user-select: none;
 }
 
@@ -36,15 +36,14 @@ body {
   display: none !important;
 }
 
-/* Menu */
+/* 明亮主菜单 */
 .menu-bg {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(135deg, rgba(180, 60, 0, 0.4) 0%, transparent 50%),
-    linear-gradient(225deg, rgba(0, 80, 120, 0.5) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
-    #111;
+    linear-gradient(160deg, rgba(255, 180, 80, 0.35) 0%, transparent 45%),
+    linear-gradient(200deg, rgba(120, 190, 255, 0.45) 0%, transparent 50%),
+    linear-gradient(180deg, #f0f6fc 0%, #d8e8f4 50%, #c8dce8 100%);
 }
 
 .menu-content {
@@ -57,18 +56,17 @@ body {
   font-size: clamp(2.5rem, 8vw, 4.5rem);
   font-weight: 900;
   letter-spacing: 0.15em;
-  background: linear-gradient(180deg, #ff8c00 0%, #cc4400 100%);
+  background: linear-gradient(180deg, #ff7700 0%, #cc4400 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 0 40px rgba(255, 140, 0, 0.5);
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 2px 4px rgba(255, 100, 0, 0.25));
 }
 
 .subtitle {
   font-size: 0.9rem;
-  letter-spacing: 0.4em;
-  color: #888;
+  letter-spacing: 0.35em;
+  color: #5a7088;
   margin: 0.5rem 0 3rem;
 }
 
@@ -91,45 +89,48 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #ff7700, #cc4400);
+  background: linear-gradient(180deg, #ff8800, #dd5500);
   color: #fff;
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  box-shadow: 0 4px 16px rgba(255, 120, 0, 0.35);
 }
 
 .btn-primary:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 24px rgba(255, 119, 0, 0.6);
+  box-shadow: 0 6px 24px rgba(255, 120, 0, 0.5);
 }
 
 .btn-secondary {
-  background: transparent;
-  color: #aaa;
-  border: 2px solid #444;
+  background: rgba(255, 255, 255, 0.7);
+  color: #446;
+  border: 2px solid #aac;
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 
 .btn-secondary:hover {
   border-color: #ff7700;
-  color: #ff7700;
+  color: #cc4400;
 }
 
 .credit {
   margin-top: 3rem;
   font-size: 0.75rem;
-  color: #555;
+  color: #7a90a8;
 }
 
-/* Help / Pause / Gameover panels */
+/* 面板 */
 .help-panel, .pause-panel, .result-panel {
-  background: rgba(20, 20, 20, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   border: 2px solid #ff7700;
   padding: 2.5rem;
-  max-width: 420px;
+  max-width: 440px;
   clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  box-shadow: 0 8px 32px rgba(0, 60, 120, 0.15);
+  color: #334;
 }
 
 .help-panel h2, .pause-panel h2, .result-panel h2 {
-  color: #ff7700;
+  color: #dd5500;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
 }
@@ -141,24 +142,26 @@ body {
 
 .help-panel li {
   padding: 0.4rem 0;
-  color: #ccc;
+  color: #445;
 }
 
 kbd {
   display: inline-block;
-  background: #333;
+  background: #eef4f8;
+  border: 1px solid #ccd;
   padding: 0.15rem 0.5rem;
   margin-right: 0.5rem;
   font-family: monospace;
-  color: #ff7700;
+  color: #dd5500;
   min-width: 2rem;
   text-align: center;
 }
 
 .help-panel p {
-  color: #888;
+  color: #667;
   font-size: 0.9rem;
   margin-bottom: 1.5rem;
+  line-height: 1.6;
 }
 
 .help-panel .btn-primary,
@@ -167,7 +170,7 @@ kbd {
   margin-bottom: 0.75rem;
 }
 
-/* HUD */
+/* HUD — 半透明亮色 */
 #hud {
   position: fixed;
   inset: 0;
@@ -184,7 +187,7 @@ kbd {
   justify-content: space-between;
   align-items: flex-start;
   padding: 1rem 1.5rem;
-  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.75) 0%, transparent 100%);
 }
 
 .hud-item {
@@ -195,22 +198,31 @@ kbd {
 
 .hud-item .label {
   font-size: 0.75rem;
-  color: #888;
+  color: #556;
   text-transform: uppercase;
+  font-weight: 600;
 }
 
 .bar-wrap {
-  width: 120px;
-  height: 8px;
-  background: #333;
+  width: 140px;
+  height: 10px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 2px;
   overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.5);
 }
 
 .bar.health {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #00cc44, #44ff88);
-  transition: width 0.2s;
+  background: linear-gradient(90deg, #00aa44, #44dd88);
+  transition: width 0.2s, background 0.3s;
+}
+
+#health-text {
+  font-weight: 700;
+  color: #223;
+  min-width: 2rem;
 }
 
 .hud-center {
@@ -218,58 +230,65 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  background: rgba(255,255,255,0.6);
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
 }
 
 #wave-text {
   font-size: 1.1rem;
-  color: #ff7700;
+  color: #dd5500;
   font-weight: 700;
 }
 
 #score-text {
   font-size: 0.85rem;
-  color: #aaa;
+  color: #556;
 }
 
 .ammo-box {
   flex-direction: column;
   align-items: flex-end;
+  background: rgba(255,255,255,0.6);
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
 }
 
 #ammo-text {
   font-size: 1.4rem;
   font-weight: 700;
   font-family: monospace;
-  color: #fff;
+  color: #223;
 }
 
-/* Crosshair */
+/* 准星 */
 #crosshair {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
 }
 
 #crosshair::before,
 #crosshair::after {
   content: "";
   position: absolute;
-  background: rgba(255, 200, 0, 0.9);
+  background: rgba(30, 30, 30, 0.85);
+  box-shadow: 0 0 2px #fff;
 }
 
 #crosshair::before {
   width: 2px;
-  height: 12px;
+  height: 14px;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
 }
 
 #crosshair::after {
-  width: 12px;
+  width: 14px;
   height: 2px;
   left: 50%;
   top: 50%;
@@ -281,40 +300,78 @@ kbd {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 2rem;
+  font-size: 1.8rem;
   color: #ff3333;
   font-weight: bold;
-  animation: hitFlash 0.2s ease-out;
+  text-shadow: 0 0 4px #fff;
+  animation: hitFlash 0.18s ease-out;
 }
 
 @keyframes hitFlash {
-  0% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
 }
 
 #reload-hint {
   position: absolute;
-  bottom: 25%;
+  bottom: 22%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.7);
-  padding: 0.5rem 1rem;
-  color: #ff7700;
-  font-size: 0.9rem;
+  background: rgba(255,255,255,0.9);
+  padding: 0.5rem 1.2rem;
+  color: #dd5500;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid #ffaa66;
 }
 
 #message {
   position: absolute;
-  top: 30%;
+  top: 28%;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  color: #ff7700;
-  text-shadow: 0 2px 8px #000;
-  animation: msgPulse 1s ease-in-out infinite;
+  color: #dd5500;
+  background: rgba(255,255,255,0.85);
+  padding: 0.6rem 1.4rem;
+  border-radius: 6px;
+  border-left: 4px solid #ff7700;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  white-space: nowrap;
 }
 
-@keyframes msgPulse {
-  50% { opacity: 0.7; }
+/* 受伤红屏 */
+#damage-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  box-shadow: inset 0 0 0 0 rgba(200, 0, 0, 0);
+  transition: box-shadow 0.05s;
+}
+
+#damage-overlay.flash {
+  box-shadow: inset 0 0 120px 40px rgba(220, 40, 20, 0.45);
+}
+
+/* 低血量警告 */
+#low-health-warn {
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #cc2200;
+  font-weight: 700;
+  font-size: 1rem;
+  background: rgba(255, 240, 230, 0.92);
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  border: 1px solid #ff6644;
+  animation: pulseWarn 0.8s ease-in-out infinite;
+}
+
+@keyframes pulseWarn {
+  50% { opacity: 0.65; }
 }

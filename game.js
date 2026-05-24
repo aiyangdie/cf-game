@@ -83,9 +83,12 @@
   const moveDir = new THREE.Vector3();
   const tmpVec = new THREE.Vector3();
   const shootDir = new THREE.Vector3();
+  const shootOrigin = new THREE.Vector3();
   const losOrigin = new THREE.Vector3();
   const losTarget = new THREE.Vector3();
   const losDir = new THREE.Vector3();
+  const shootEuler = new THREE.Euler(0, 0, 0, "YXZ");
+  let hitSparks = [];
 
   const canvas = document.getElementById("game-canvas");
   const menu = document.getElementById("menu");
@@ -604,6 +607,19 @@
     updateHUD();
   }
 
+  function syncCameraRotation() {
+    camera.rotation.order = "YXZ";
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+    camera.updateMatrixWorld(true);
+  }
+
+  function getShootDirection(out) {
+    shootEuler.set(pitch, yaw, 0, "YXZ");
+    out.set(0, 0, -1).applyEuler(shootEuler);
+    return out;
+  }
+
   function findEnemyFromHit(object) {
     let node = object;
     while (node) {
@@ -629,20 +645,87 @@
     else updateHUD();
   }
 
-  function raycastAttack(range) {
-    camera.getWorldDirection(shootDir);
-    raycaster.set(camera.position, shootDir, 0, range);
-    const aliveMeshes = enemies.filter((e) => e.alive).map((e) => e.mesh);
-    const hits = raycaster.intersectObjects(coverMeshes.concat(aliveMeshes), true);
-    if (hits.length > 0) {
-      const first = hits[0];
-      const target = findEnemyFromHit(first.object);
-      if (target) {
-        return { target, isHead: first.object.name === "head", hitCover: false };
+  function fuzzyTargetEnemy(range, maxAngle) {
+    getShootDirection(shootDir);
+    let best = null;
+    let bestAngle = maxAngle;
+    enemies.forEach((e) => {
+      if (!e.alive) return;
+      const pos = e.mesh.position;
+      const dx = pos.x - camera.position.x;
+      const dy = (pos.y + 1.35) - camera.position.y;
+      const dz = pos.z - camera.position.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist > range || dist < 0.5) return;
+      const toEnemy = losTarget.set(dx, dy, dz).normalize();
+      const ang = shootDir.angleTo(toEnemy);
+      if (ang < bestAngle && hasLineOfSight(pos, camera.position)) {
+        bestAngle = ang;
+        best = e;
       }
-      return { target: null, isHead: false, hitCover: true };
+    });
+    if (!best) return null;
+    getShootDirection(shootDir);
+    const dy = (best.mesh.position.y + 2.15) - camera.position.y;
+    const isHead = shootDir.y < -0.08 && dy > 0.6;
+    return { target: best, isHead, hitCover: false };
+  }
+
+  function raycastAttack(range) {
+    syncCameraRotation();
+    camera.getWorldPosition(shootOrigin);
+    getShootDirection(shootDir);
+
+    const aliveMeshes = enemies.filter((e) => e.alive).map((e) => e.mesh);
+
+    raycaster.set(shootOrigin, shootDir, 0, range);
+    const enemyHits = aliveMeshes.length
+      ? raycaster.intersectObjects(aliveMeshes, true)
+      : [];
+    const coverHits = coverMeshes.length
+      ? raycaster.intersectObjects(coverMeshes, false)
+      : [];
+
+    const eh = enemyHits[0];
+    const ch = coverHits[0];
+
+    if (eh && (!ch || eh.distance < ch.distance)) {
+      const target = findEnemyFromHit(eh.object);
+      if (target) {
+        return { target, isHead: eh.object.name === "head", hitCover: false, point: eh.point };
+      }
     }
+
+    if (ch) {
+      return { target: null, isHead: false, hitCover: true, point: ch.point };
+    }
+
+    const fuzzy = fuzzyTargetEnemy(range, 0.22);
+    if (fuzzy) return fuzzy;
+
     return meleeFallback(range);
+  }
+
+  function spawnHitSpark(pos) {
+    const spark = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xff6600 })
+    );
+    spark.position.copy(pos);
+    scene.add(spark);
+    hitSparks.push({ mesh: spark, life: 0.15 });
+  }
+
+  function updateHitSparks(dt) {
+    hitSparks = hitSparks.filter((s) => {
+      s.life -= dt;
+      if (s.life <= 0) {
+        scene.remove(s.mesh);
+        return false;
+      }
+      s.mesh.scale.multiplyScalar(0.92);
+      return true;
+    });
   }
 
   function meleeFallback(range) {
@@ -679,6 +762,7 @@
       const res = raycastAttack(wep.range);
       if (res && res.target && !res.hitCover) {
         damageEnemy(res.target, res.isHead, wep.damage, wep.headMult);
+        if (res.point) spawnHitSpark(res.point);
         weaponModels.knife.position.z = -0.08;
         setTimeout(() => { weaponModels.knife.position.z = 0; }, 80);
       }
@@ -702,6 +786,7 @@
     setTimeout(() => { weaponsGroup.position.z = 0; }, 35);
 
     const res = raycastAttack(wep.range);
+    if (res && res.point) spawnHitSpark(res.point);
     if (res && res.target && !res.hitCover) {
       damageEnemy(res.target, res.isHead, wep.damage, wep.headMult);
     }
@@ -871,6 +956,8 @@
 
   function resetGame() {
     clearTimers();
+    hitSparks.forEach((s) => scene.remove(s.mesh));
+    hitSparks = [];
     enemies.forEach((e) => scene.remove(e.mesh));
     enemies = [];
     clearPickups();
@@ -922,7 +1009,6 @@
     lastTime = now;
 
     if (reloading && now >= reloadEnd) finishReload();
-    if (mouseDown) attack();
 
     let mdx = 0;
     let mdz = 0;
@@ -948,11 +1034,12 @@
     }
 
     camera.position.y = 1.7;
-    camera.rotation.order = "YXZ";
-    camera.rotation.y = yaw;
-    camera.rotation.x = pitch;
+    syncCameraRotation();
+
+    if (mouseDown) attack();
 
     updatePickups(dt);
+    updateHitSparks(dt);
     enemyAI(dt, now);
     updateEnemyScreenMarkers();
     renderer.render(scene, camera);
@@ -1043,21 +1130,14 @@
     pitch = THREE.MathUtils.clamp(pitch, -1.45, 1.45);
   });
 
-  canvas.addEventListener("click", () => {
-    if (gameState === "playing" && document.pointerLockElement !== canvas) {
+
+  canvas.addEventListener("mousedown", (e) => {
+    if (e.button !== 0 || gameState !== "playing") return;
+    mouseDown = true;
+    if (document.pointerLockElement !== canvas) {
       canvas.requestPointerLock();
     }
-  });
-
-  function isUiClick(target) {
-    return !!target.closest("#weapon-bar");
-  }
-
-  document.addEventListener("mousedown", (e) => {
-    if (e.button !== 0 || gameState !== "playing") return;
-    if (isUiClick(e.target)) return;
-    mouseDown = true;
-    if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
+    syncCameraRotation();
     attack();
   });
   document.addEventListener("mouseup", () => { mouseDown = false; });

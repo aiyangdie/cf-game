@@ -10,7 +10,8 @@
   "homepage": "https://aiyangdie.github.io/cf-game/",
   "scripts": {
     "start": "npx --yes serve . -p 3000",
-    "build": "node scripts/build-release.js"
+    "build": "node scripts/build-release.js",
+    "verify": "node scripts/verify-versions.js"
   },
   "keywords": ["game", "fps", "threejs", "github-pages", "open-source"],
   "engines": {

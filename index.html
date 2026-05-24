@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>穿越火线 · 网页版 CF</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
   <div id="menu" class="screen active">
@@ -94,13 +94,14 @@
   </div>
 
   <div id="upgrade-shop" class="screen hidden">
-    <div class="shop-panel help-wide">
+    <div class="help-panel shop-panel help-wide">
       <h2>军械库 · 升级</h2>
       <p id="shop-gp-text" class="shop-gp">GP 0</p>
       <p class="shop-hint">击杀 / 爆头 / 过关获得 GP · 升级永久保存在本浏览器</p>
       <div id="upgrade-grid" class="upgrade-grid"></div>
       <div class="shop-actions">
         <button id="btn-shop-next" class="btn-primary">下一波 (Enter)</button>
+        <p class="shop-continue-hint">按 <kbd>Enter</kbd> 或 <kbd>B</kbd> 进入下一波</p>
       </div>
     </div>
   </div>
@@ -121,7 +122,7 @@
   <script src="audio.js"></script>
   <script src="progression.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="game.js?v=17"></script>
+  <script src="game.js?v=18"></script>
   <script>
     (function () {
       var c = window.CF_CONFIG || {};

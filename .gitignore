@@ -2,5 +2,9 @@
 Thumbs.db
 *.log
 node_modules/
+dist/
 .env
 .env.*
+
+# 若 config.js 含私人密码且不想提交，可取消下一行注释
+# config.js

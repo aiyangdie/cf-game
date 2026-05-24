@@ -403,6 +403,89 @@ kbd {
   50% { opacity: 0.5; }
 }
 
+/* 访问密码门 */
+html.gate-locked #menu,
+html.gate-locked #game-canvas {
+  visibility: hidden;
+}
+
+#access-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #e8f4fc, #c8dce8);
+}
+
+.gate-panel {
+  background: #fff;
+  border: 2px solid #ff7700;
+  padding: 2rem 2.5rem;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 360px;
+  box-shadow: 0 12px 40px rgba(0, 60, 120, 0.15);
+}
+
+.gate-panel h2 {
+  color: #dd5500;
+  margin-bottom: 0.75rem;
+}
+
+.gate-panel p {
+  color: #556;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+#gate-password {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+#gate-password:focus {
+  border-color: #ff7700;
+  outline: none;
+}
+
+.gate-error {
+  color: #cc2200;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+#gate-submit {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(180deg, #ff8800, #dd5500);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#gate-submit:hover {
+  filter: brightness(1.05);
+}
+
+.gate-note {
+  margin-top: 1rem !important;
+  font-size: 0.75rem !important;
+  color: #888 !important;
+}
+
+.menu-content a {
+  color: #dd5500;
+}
+
 .help-wide {
   max-width: 480px;
 }

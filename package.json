@@ -1,0 +1,19 @@
+{
+  "name": "cf-game",
+  "version": "1.0.0",
+  "description": "开源网页版穿越火线风格 FPS · Three.js · GitHub Pages",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aiyangdie/cf-game.git"
+  },
+  "homepage": "https://aiyangdie.github.io/cf-game/",
+  "scripts": {
+    "start": "npx --yes serve . -p 3000",
+    "build": "node scripts/build-release.js"
+  },
+  "keywords": ["game", "fps", "threejs", "github-pages", "open-source"],
+  "engines": {
+    "node": ">=18"
+  }
+}

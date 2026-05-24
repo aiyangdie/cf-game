@@ -486,6 +486,14 @@ html.gate-locked #game-canvas {
   color: #dd5500;
 }
 
+.lock-hint {
+  font-size: 0.8rem;
+  color: #6a8098;
+  margin-top: 1rem;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
 .help-wide {
   max-width: 480px;
 }

@@ -78,6 +78,7 @@
   let invincibleUntil = 0;
   let waveGraceUntil = 0;
   let lastTime = 0;
+  let waveTimerId = null;
   let raycaster = new THREE.Raycaster();
   const moveDir = new THREE.Vector3();
   const tmpVec = new THREE.Vector3();
@@ -270,13 +271,7 @@
     switchWeapon("rifle", true);
   }
 
-  function switchWeapon(id, silent) {
-    if (!WEAPONS[id] || currentWeapon === id) return;
-    if (!WEAPONS[currentWeapon].melee) {
-      weaponAmmo[currentWeapon] = getAmmoState();
-    }
-    cancelReload();
-    currentWeapon = id;
+  function applyWeaponVisual(id) {
     Object.keys(weaponModels).forEach((k) => {
       weaponModels[k].visible = k === id;
     });
@@ -284,6 +279,18 @@
     document.querySelectorAll(".wslot").forEach((el) => {
       el.classList.toggle("active", el.dataset.w === id);
     });
+  }
+
+  function switchWeapon(id, silent) {
+    if (!WEAPONS[id]) return;
+    if (id !== currentWeapon) {
+      if (!WEAPONS[currentWeapon].melee) {
+        weaponAmmo[currentWeapon] = getAmmoState();
+      }
+      cancelReload();
+      currentWeapon = id;
+    }
+    applyWeaponVisual(id);
     updateHUD();
     if (!silent) showPickupToast(`切换: ${WEAPONS[id].name}`);
   }
@@ -442,6 +449,7 @@
     );
     hitbox.position.y = 1.25;
     hitbox.name = "hitbox";
+    hitbox.raycast = function () {};
     group.add(hitbox);
 
     const ring = new THREE.Mesh(
@@ -619,9 +627,35 @@
     raycaster.set(camera.position, shootDir, 0, range);
     const aliveMeshes = enemies.filter((e) => e.alive).map((e) => e.mesh);
     const hits = raycaster.intersectObjects(coverMeshes.concat(aliveMeshes), true);
-    if (hits.length === 0) return null;
-    const first = hits[0];
-    return { target: findEnemyFromHit(first.object), isHead: first.object.name === "head", hitCover: !findEnemyFromHit(first.object) };
+    if (hits.length > 0) {
+      const first = hits[0];
+      const target = findEnemyFromHit(first.object);
+      if (target) {
+        return { target, isHead: first.object.name === "head", hitCover: false };
+      }
+      return { target: null, isHead: false, hitCover: true };
+    }
+    return meleeFallback(range);
+  }
+
+  function meleeFallback(range) {
+    const wep = getWep();
+    if (!wep.melee) return null;
+    let best = null;
+    let bestDist = range;
+    enemies.forEach((e) => {
+      if (!e.alive) return;
+      const pos = e.mesh.position;
+      const dx = camera.position.x - pos.x;
+      const dz = camera.position.z - pos.z;
+      const d = Math.sqrt(dx * dx + dz * dz);
+      if (d < bestDist && hasLineOfSight(pos, camera.position)) {
+        bestDist = d;
+        best = e;
+      }
+    });
+    if (!best) return null;
+    return { target: best, isHead: false, hitCover: false };
   }
 
   function attack() {
@@ -689,7 +723,8 @@
       updateHUD();
       showMessage(`第 ${cleared} 波完成！+${WAVE_HEAL} HP`, 2400);
       wave++;
-      setTimeout(() => {
+      clearTimeout(waveTimerId);
+      waveTimerId = setTimeout(() => {
         if (gameState === "playing") spawnWave();
       }, 2400);
     }
@@ -813,7 +848,15 @@
     cancelAnimationFrame(animId);
   }
 
+  function clearTimers() {
+    clearTimeout(waveTimerId);
+    clearTimeout(showMessage._t);
+    clearTimeout(showPickupToast._t);
+    clearTimeout(showHeadshotPopup._t);
+  }
+
   function resetGame() {
+    clearTimers();
     enemies.forEach((e) => scene.remove(e.mesh));
     enemies = [];
     clearPickups();
@@ -823,7 +866,8 @@
     wave = 1;
     weaponAmmo = { rifle: { ammo: 30, reserve: 90 }, pistol: { ammo: 12, reserve: 60 } };
     currentWeapon = "rifle";
-    switchWeapon("rifle", true);
+    cancelReload();
+    applyWeaponVisual("rifle");
     reloading = false;
     reloadEnd = 0;
     invincibleUntil = 0;
@@ -838,6 +882,10 @@
   }
 
   function startGame() {
+    if (typeof THREE === "undefined") {
+      alert("游戏资源加载失败，请检查网络后刷新页面（需要加载 Three.js）");
+      return;
+    }
     if (!scene) initThree();
     resetGame();
     gameState = "playing";
@@ -911,9 +959,35 @@
     lastTime = performance.now();
     animate();
   });
-  document.getElementById("btn-menu").addEventListener("click", () => location.reload());
-  document.getElementById("btn-retry").addEventListener("click", () => location.reload());
-  document.getElementById("btn-menu2").addEventListener("click", () => location.reload());
+  function returnToMenu() {
+    clearTimers();
+    gameState = "menu";
+    mouseDown = false;
+    document.exitPointerLock();
+    cancelAnimationFrame(animId);
+    hideTransientHud();
+    if (enemyMarkers) enemyMarkers.innerHTML = "";
+    hud.classList.add("hidden");
+    gameoverScreen.classList.add("hidden");
+    gameoverScreen.classList.remove("active");
+    pauseScreen.classList.add("hidden");
+    pauseScreen.classList.remove("active");
+    help.classList.remove("active");
+    menu.classList.remove("hidden");
+    menu.classList.add("active");
+    if (scene) {
+      enemies.forEach((e) => scene.remove(e.mesh));
+      clearPickups();
+    }
+    enemies = [];
+  }
+
+  document.getElementById("btn-retry").addEventListener("click", () => {
+    returnToMenu();
+    startGame();
+  });
+  document.getElementById("btn-menu2").addEventListener("click", returnToMenu);
+  document.getElementById("btn-menu").addEventListener("click", returnToMenu);
 
   document.querySelectorAll(".wslot").forEach((el) => {
     el.addEventListener("click", () => {
@@ -924,6 +998,9 @@
   document.addEventListener("keydown", (e) => {
     keys[e.key] = true;
     if (gameState !== "playing") return;
+    if (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "r" || e.key === "R") {
+      e.preventDefault();
+    }
     if (e.key === "1") switchWeapon("rifle");
     if (e.key === "2") switchWeapon("pistol");
     if (e.key === "3") switchWeapon("knife");

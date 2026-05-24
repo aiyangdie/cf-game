@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>穿越火线 · 网页版 CF</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
   <div id="menu" class="screen active">
@@ -34,6 +34,7 @@
         <li><kbd>Space</kbd> 跳跃 · <kbd>点击画面</kbd> 锁定鼠标 · <kbd>左键</kbd> 攻击</li>
         <li><kbd>1</kbd> AK47步枪 · <kbd>2</kbd> 沙鹰手枪 · <kbd>3</kbd> 军刀</li>
         <li><kbd>R</kbd> 换弹 · <kbd>ESC</kbd> / <kbd>P</kbd> 暂停</li>
+        <li><kbd>G</kbd> 手雷（范围伤害，每局 2 枚） · 连杀额外 GP</li>
         <li><kbd>M</kbd> 开关音效 · <kbd>B</kbd> 军械库</li>
       </ul>
       <p>击杀赚 GP 和军衔经验。每波清场后进入<strong>军械库</strong>升级武器、防弹衣、弹匣等（进度保存在浏览器）。</p>
@@ -58,6 +59,7 @@
       <div class="hud-item ammo-box">
         <span id="weapon-name">AK47</span>
         <span id="ammo-text">30 / 90</span>
+        <span id="grenade-hud" class="grenade-hud">手雷 <kbd>G</kbd> <span id="grenade-count">2</span></span>
       </div>
     </div>
 
@@ -70,6 +72,7 @@
     <div id="crosshair"></div>
     <div id="hit-marker" class="hidden">✕</div>
     <div id="headshot-popup" class="hidden">爆头!</div>
+    <div id="combo-popup" class="hidden"></div>
     <div id="reload-hint" class="hidden">换弹中...</div>
     <div id="pickup-toast" class="hidden"></div>
     <div id="message" class="hidden"></div>
@@ -125,9 +128,16 @@
   <script src="config.js"></script>
   <script src="gate.js"></script>
   <script src="audio.js"></script>
-  <script src="progression.js?v=19"></script>
+  <script src="progression.js?v=20"></script>
+
+  <script src="js/core/constants.js?v=20"></script>
+  <script src="js/core/game-state.js?v=20"></script>
+  <script src="js/core/input-bindings.js?v=20"></script>
+  <script src="js/data/weapons.js?v=20"></script>
+  <script src="js/systems/combo.js?v=20"></script>
+  <script src="js/systems/grenade.js?v=20"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="game.js?v=19"></script>
+  <script src="game.js?v=20"></script>
   <script>
     (function () {
       var c = window.CF_CONFIG || {};

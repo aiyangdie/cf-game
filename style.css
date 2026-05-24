@@ -622,6 +622,51 @@ html.gate-locked #game-canvas {
 
 .wslot.active span { color: #cc4400; }
 
+#headshot-popup.show {
+  animation: headshot-pop 0.7s ease-out;
+}
+
+#combo-popup {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #ff8800;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 52;
+}
+
+#combo-popup.show {
+  animation: combo-pop 0.85s ease-out;
+}
+
+@keyframes combo-pop {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  30% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0.85; }
+}
+
+.grenade-hud {
+  display: block;
+  font-size: 0.72rem;
+  color: #556;
+  margin-top: 0.2rem;
+}
+
+.grenade-hud kbd {
+  font-size: 0.65rem;
+  min-width: 1.2rem;
+  padding: 0.05rem 0.35rem;
+}
+
+#grenade-count {
+  color: #dd5500;
+  font-weight: 700;
+}
+
 #headshot-popup {
   position: absolute;
   top: 38%;

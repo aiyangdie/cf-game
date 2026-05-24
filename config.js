@@ -7,6 +7,6 @@ window.CF_CONFIG = {
     hint: "请输入访问码进入游戏",
   },
   siteName: "CF Web Edition",
-  version: "1.2.0",
+  version: "1.3.0",
   build: "20260524-0",
 };

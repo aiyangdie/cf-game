@@ -1,71 +1,44 @@
 (function () {
   "use strict";
 
-  const PLAYER_MAX_HEALTH = 100;
-  const EYE_HEIGHT = 1.7;
-  const MOVE_SPEED = 10.5;
-  const SPRINT_MULT = 1.55;
-  const BACKWARD_MULT = 0.72;
-  const AIR_CONTROL = 0.55;
-  const JUMP_VELOCITY = 6.8;
-  const GRAVITY = 24;
-  const HEAD_BOB_AMOUNT = 0.035;
-  const HEAD_BOB_SPEED = 11;
-  const FOOTSTEP_WALK = 0.42;
-  const FOOTSTEP_SPRINT = 0.28;
-  const WAVE_HEAL = 30;
-  const INVINCIBLE_MS = 1200;
-  const WAVE_GRACE_MS = 2800;
-  const ENEMY_BASE_DAMAGE = 5;
-  const BULLET_PLAYER_SPEED = 130;
-  const BULLET_PISTOL_SPEED = 100;
-  const BULLET_ENEMY_SPEED = 82;
-  const PLAYER_RADIUS = 0.45;
-  const ENEMY_RADIUS = 0.5;
-  const MOUSE_SENS = 0.0018;
-  const ARENA_LIMIT = 26;
-  const PICKUP_RADIUS = 1.35;
+  const C = window.CFGame.Constants;
+  const GS = window.CFGame.GameState;
+  const KB = window.CFGame.InputBindings;
+  const WEAPONS = window.CFGame.Weapons.BASE;
 
-  const WEAPONS = {
-    rifle: {
-      name: "AK47",
-      magSize: 30,
-      maxReserve: 90,
-      fireRate: 85,
-      reloadTime: 1600,
-      damage: 30,
-      headMult: 2.2,
-      range: 100,
-    },
-    pistol: {
-      name: "沙鹰",
-      magSize: 12,
-      maxReserve: 60,
-      fireRate: 220,
-      reloadTime: 1100,
-      damage: 48,
-      headMult: 2.5,
-      range: 70,
-    },
-    knife: {
-      name: "军刀",
-      magSize: 0,
-      maxReserve: 0,
-      fireRate: 380,
-      reloadTime: 0,
-      damage: 90,
-      headMult: 3,
-      range: 3.2,
-      melee: true,
-    },
-  };
+  const {
+    PLAYER_MAX_HEALTH,
+    EYE_HEIGHT,
+    MOVE_SPEED,
+    SPRINT_MULT,
+    BACKWARD_MULT,
+    AIR_CONTROL,
+    JUMP_VELOCITY,
+    GRAVITY,
+    HEAD_BOB_AMOUNT,
+    HEAD_BOB_SPEED,
+    FOOTSTEP_WALK,
+    FOOTSTEP_SPRINT,
+    WAVE_HEAL,
+    INVINCIBLE_MS,
+    WAVE_GRACE_MS,
+    ENEMY_BASE_DAMAGE,
+    BULLET_PLAYER_SPEED,
+    BULLET_PISTOL_SPEED,
+    BULLET_ENEMY_SPEED,
+    PLAYER_RADIUS,
+    ENEMY_RADIUS,
+    MOUSE_SENS,
+    ARENA_LIMIT,
+    PICKUP_RADIUS,
+  } = C;
 
   let scene, camera, renderer;
   let enemies = [];
   let pickups = [];
   let colliders = [];
   let coverMeshes = [];
-  let gameState = "menu";
+  let gameState = GS.MENU;
   let health = PLAYER_MAX_HEALTH;
   let score = 0;
   let headshots = 0;
@@ -193,6 +166,65 @@
     }
     if (parts.length) showPickupToast(`波次补给：${parts.join(" · ")}`, true);
     updateHUD();
+  }
+
+  function getGrenadeContext() {
+    return {
+      scene,
+      camera,
+      arenaLimit: ARENA_LIMIT,
+      getShootDirection: () => getShootDirection(shootDir),
+      onExplode: applyGrenadeDamage,
+    };
+  }
+
+  function applyGrenadeDamage(x, z, damage, radius) {
+    enemies.forEach((e) => {
+      if (!e.alive) return;
+      const dx = e.mesh.position.x - x;
+      const dz = e.mesh.position.z - z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist > radius) return;
+      const falloff = 1 - (dist / radius) * 0.45;
+      e.health -= damage * falloff;
+      updateHealthBar(e.healthBar, Math.max(0, e.health / e.maxHealth));
+      if (e.health <= 0) killEnemy(e, false);
+    });
+    showPickupToast("手雷爆炸!", true);
+  }
+
+  function tryThrowGrenade() {
+    if (!window.CFGame.Grenade) return;
+    const now = performance.now();
+    if (CFGame.Grenade.tryThrow(getGrenadeContext(), now)) {
+      updateGrenadeHud();
+    } else if (CFGame.Grenade.getCount() <= 0) {
+      showPickupToast("手雷已用完", false);
+    } else {
+      showPickupToast("手雷冷却中", false);
+    }
+  }
+
+  function updateGrenadeHud() {
+    const el = document.getElementById("grenade-count");
+    if (!el || !window.CFGame.Grenade) return;
+    el.textContent = String(CFGame.Grenade.getCount());
+  }
+
+  function updateComboHud(now) {
+    const el = document.getElementById("combo-popup");
+    if (!el || !window.CFGame.Combo) return;
+    const d = CFGame.Combo.getDisplay(now);
+    if (!d) {
+      el.classList.add("hidden");
+      el.classList.remove("show");
+      return;
+    }
+    el.textContent = d.label;
+    el.classList.remove("hidden");
+    el.classList.remove("show");
+    void el.offsetWidth;
+    el.classList.add("show");
   }
 
   function getPlayerMaxHealth() {
@@ -668,7 +700,7 @@
       shopScreen.classList.remove("hidden");
       shopScreen.classList.add("active");
     }
-    gameState = "shop";
+    gameState = GS.SHOP;
     updateProgHUD();
   }
 
@@ -677,7 +709,7 @@
       shopScreen.classList.add("hidden");
       shopScreen.classList.remove("active");
     }
-    gameState = "playing";
+    gameState = GS.PLAYING;
     clearAllKeys();
     mouseDown = false;
     if (startWave && shopPendingWave) {
@@ -693,7 +725,7 @@
   }
 
   function canOpenShop() {
-    return gameState === "playing"
+    return gameState === GS.PLAYING
       && enemies.length > 0
       && enemies.every((e) => !e.alive);
   }
@@ -758,9 +790,11 @@
     }
 
     if (sprintTag) {
-      const sprinting = gameState === "playing" && isSprinting() && isMovingInput();
+      const sprinting = gameState === GS.PLAYING && isSprinting() && isMovingInput();
       sprintTag.classList.toggle("hidden", !sprinting);
     }
+    updateGrenadeHud();
+    updateComboHud(performance.now());
   }
 
   function showHeadshotPopup() {
@@ -1067,6 +1101,17 @@
     score++;
     scene.remove(enemy.mesh);
     if (window.CFProgression) CFProgression.onKill(wasHeadshot);
+    const now = performance.now();
+    if (window.CFGame.Combo) {
+      const combo = CFGame.Combo.onKill(now);
+      if (combo.bonusGp > 0 && window.CFProgression) {
+        CFProgression.addBonusGp(combo.bonusGp);
+      }
+      if (combo.label) {
+        showPickupToast(`${combo.label} +${combo.bonusGp} GP`, true);
+        updateComboHud(now);
+      }
+    }
     const killHeal = window.CFProgression ? CFProgression.getKillHeal() : 0;
     if (killHeal > 0) {
       health = Math.min(getPlayerMaxHealth(), health + killHeal);
@@ -1307,7 +1352,7 @@
   }
 
   function updateEnemyScreenMarkers() {
-    if (!enemyMarkers || gameState !== "playing") return;
+    if (!enemyMarkers || gameState !== GS.PLAYING) return;
     enemyMarkers.innerHTML = "";
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -1340,7 +1385,7 @@
     clearTimers();
     clearAllKeys();
     mouseDown = false;
-    gameState = "gameover";
+    gameState = GS.GAMEOVER;
     document.exitPointerLock();
     hud.classList.add("hidden");
     if (enemyMarkers) enemyMarkers.innerHTML = "";
@@ -1375,6 +1420,8 @@
     enemies.forEach((e) => scene.remove(e.mesh));
     enemies = [];
     clearPickups();
+    if (window.CFGame.Grenade) CFGame.Grenade.reset();
+    if (window.CFGame.Combo) CFGame.Combo.reset();
     health = getPlayerMaxHealth();
     score = 0;
     headshots = 0;
@@ -1411,11 +1458,11 @@
       alert("游戏资源加载失败，请检查网络后刷新页面（需要加载 Three.js）");
       return;
     }
-    if (gameState === "playing") return;
+    if (gameState === GS.PLAYING) return;
     cancelAnimationFrame(animId);
     if (!scene) initThree();
     resetGame();
-    gameState = "playing";
+    gameState = GS.PLAYING;
     menu.classList.remove("active");
     menu.classList.add("hidden");
     hud.classList.remove("hidden");
@@ -1423,7 +1470,7 @@
     if (window.CFProgression) {
       CFProgression.setOnChange(() => {
         updateProgHUD();
-        if (gameState === "shop") {
+        if (gameState === GS.SHOP) {
           CFProgression.refillMagazines(weaponAmmo, WEAPONS);
           updateHUD();
         }
@@ -1498,8 +1545,8 @@
 
   function animate() {
     animId = requestAnimationFrame(animate);
-    if (gameState !== "playing") {
-      if (gameState === "shop" && renderer && scene && camera) {
+    if (gameState !== GS.PLAYING) {
+      if (gameState === GS.SHOP && renderer && scene && camera) {
         renderer.render(scene, camera);
       }
       updateLockHint();
@@ -1524,6 +1571,13 @@
     enemyAI(dt, now);
     updateEnemyScreenMarkers();
 
+    const nowFrame = performance.now();
+    if (window.CFGame.Combo) CFGame.Combo.update(nowFrame);
+    if (window.CFGame.Grenade) {
+      CFGame.Grenade.update(dt, getGrenadeContext(), nowFrame);
+    }
+    updateComboHud(nowFrame);
+
     if (sprintTag) {
       const sprinting = isSprinting() && isMovingInput();
       sprintTag.classList.toggle("hidden", !sprinting);
@@ -1536,17 +1590,17 @@
   function updateLockHint() {
     const el = document.getElementById("lock-overlay");
     if (!el) return;
-    const show = gameState === "playing" && !pointerLocked;
+    const show = gameState === GS.PLAYING && !pointerLocked;
     el.classList.toggle("hidden", !show);
   }
 
   function pauseGame() {
-    if (gameState !== "playing") return;
+    if (gameState !== GS.PLAYING) return;
     clearTimers();
     clearAllKeys();
     clearBullets();
     mouseDown = false;
-    gameState = "pause";
+    gameState = GS.PAUSE;
     document.exitPointerLock();
     cancelAnimationFrame(animId);
     if (enemyMarkers) enemyMarkers.innerHTML = "";
@@ -1558,7 +1612,7 @@
   function resumeGame() {
     pauseScreen.classList.add("hidden");
     pauseScreen.classList.remove("active");
-    gameState = "playing";
+    gameState = GS.PLAYING;
     clearAllKeys();
     mouseDown = false;
     canvas.requestPointerLock();
@@ -1569,7 +1623,7 @@
   const lockOverlay = document.getElementById("lock-overlay");
   if (lockOverlay) {
     lockOverlay.addEventListener("click", () => {
-      if (gameState !== "playing") return;
+      if (gameState !== GS.PLAYING) return;
       canvas.requestPointerLock();
     });
   }
@@ -1587,7 +1641,7 @@
   function returnToMenu() {
     clearTimers();
     clearAllKeys();
-    gameState = "menu";
+    gameState = GS.MENU;
     mouseDown = false;
     document.exitPointerLock();
     cancelAnimationFrame(animId);
@@ -1627,7 +1681,7 @@
     el.addEventListener("mousedown", (e) => e.stopPropagation());
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (gameState === "playing") switchWeapon(el.dataset.w);
+      if (gameState === GS.PLAYING) switchWeapon(el.dataset.w);
     });
   });
 
@@ -1635,37 +1689,41 @@
     if (isMovingKey(e.code)) e.preventDefault();
     keysDown.add(e.code);
 
-    if (gameState === "playing") {
-      if (e.code === "Digit1") { e.preventDefault(); switchWeapon("rifle"); }
-      if (e.code === "Digit2") { e.preventDefault(); switchWeapon("pistol"); }
-      if (e.code === "Digit3") { e.preventDefault(); switchWeapon("knife"); }
-      if (e.code === "KeyR") { e.preventDefault(); startReload(); }
-      if (e.code === "Escape" || e.code === "KeyP") {
+    if (gameState === GS.PLAYING) {
+      if (e.code === KB.GRENADE && !e.repeat) {
+        e.preventDefault();
+        tryThrowGrenade();
+      }
+      if (e.code === KB.WEAPON_1) { e.preventDefault(); switchWeapon("rifle"); }
+      if (e.code === KB.WEAPON_2) { e.preventDefault(); switchWeapon("pistol"); }
+      if (e.code === KB.WEAPON_3) { e.preventDefault(); switchWeapon("knife"); }
+      if (e.code === KB.RELOAD) { e.preventDefault(); startReload(); }
+      if (e.code === KB.PAUSE || e.code === KB.PAUSE_ALT) {
         e.preventDefault();
         pauseGame();
       }
-      if (e.code === "KeyM") {
+      if (e.code === KB.MUTE) {
         e.preventDefault();
         if (window.CFAudio) {
           const m = CFAudio.toggleMute();
           showPickupToast(m ? "音效已关闭" : "音效已开启", true);
         }
       }
-      if (e.code === "Space") {
+      if (e.code === KB.JUMP) {
         e.preventDefault();
         if (!e.repeat) tryJump();
       }
-      if (e.code === "KeyB" && canOpenShop()) {
+      if (e.code === KB.SHOP && canOpenShop()) {
         e.preventDefault();
         openUpgradeShop(true);
       }
-    } else if (gameState === "shop") {
-      if (e.code === "KeyB" || e.code === "Enter") {
+    } else if (gameState === GS.SHOP) {
+      if (e.code === KB.SHOP || e.code === KB.CONFIRM) {
         e.preventDefault();
         closeUpgradeShop(true);
       }
-    } else if (gameState === "pause") {
-      if (e.code === "Escape" || e.code === "KeyP") {
+    } else if (gameState === GS.PAUSE) {
+      if (e.code === KB.PAUSE || e.code === KB.PAUSE_ALT) {
         e.preventDefault();
         resumeGame();
       }
@@ -1682,7 +1740,7 @@
   });
 
   document.addEventListener("mousemove", (e) => {
-    if (!pointerLocked || gameState !== "playing") return;
+    if (!pointerLocked || gameState !== GS.PLAYING) return;
     yaw -= e.movementX * MOUSE_SENS;
     pitch -= e.movementY * MOUSE_SENS;
     pitch = THREE.MathUtils.clamp(pitch, -1.45, 1.45);
@@ -1690,7 +1748,7 @@
 
 
   canvas.addEventListener("mousedown", (e) => {
-    if (e.button !== 0 || gameState !== "playing") return;
+    if (e.button !== 0 || gameState !== GS.PLAYING) return;
     mouseDown = true;
     if (document.pointerLockElement !== canvas) {
       canvas.requestPointerLock();

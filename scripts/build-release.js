@@ -22,12 +22,25 @@ const INCLUDE = [
   "gate.js",
   "config.js",
   "config.example.js",
+  "data/weapons.json",
   "LICENSE",
   "README.md",
   "CHANGELOG.md",
   "docs/VERSIONING.md",
+  "docs/ARCHITECTURE.md",
   "docs/versions.json",
 ];
+
+function copyDirRecursive(srcDir, destDir) {
+  if (!fs.existsSync(srcDir)) return;
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.readdirSync(srcDir, { withFileTypes: true }).forEach((ent) => {
+    const s = path.join(srcDir, ent.name);
+    const d = path.join(destDir, ent.name);
+    if (ent.isDirectory()) copyDirRecursive(s, d);
+    else fs.copyFileSync(s, d);
+  });
+}
 
 function rmrf(dir) {
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
@@ -43,6 +56,9 @@ INCLUDE.forEach((file) => {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(src, dest);
 });
+
+copyDirRecursive(path.join(ROOT, "js"), path.join(stageDir, "js"));
+copyDirRecursive(path.join(ROOT, "data"), path.join(stageDir, "data"));
 
 const zipPath = path.join(distDir, `${outName}.zip`);
 if (process.platform === "win32") {

@@ -161,6 +161,11 @@
     return amount;
   }
 
+  /** 连杀等额外 GP（已含赏金加成） */
+  function addBonusGp(n) {
+    return grantGp(n);
+  }
+
   function addXp(n) {
     state.totalXp += n;
     while (state.totalXp >= state.rank * 120) {
@@ -502,6 +507,7 @@
     resetWavePrep,
     onKill,
     onWaveClear,
+    addBonusGp,
     tryBuy,
     tryBuyConsumable,
     renderShop,

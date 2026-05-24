@@ -66,9 +66,7 @@ function replacePackageVersion(content, version) {
 }
 
 function replaceHtmlCache(content, cacheNum) {
-  return content
-    .replace(/style\.css\?v=\d+/g, `style.css?v=${cacheNum}`)
-    .replace(/game\.js\?v=\d+/g, `game.js?v=${cacheNum}`);
+  return content.replace(/\?v=\d+/g, `?v=${cacheNum}`);
 }
 
 function prependChangelog(version, date) {

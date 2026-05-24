@@ -117,6 +117,15 @@
     footstep() {
       noiseBurst(0.025, 0.035, 350);
     },
+    throw() {
+      tone(220, 0.06, "triangle", 0.06, 0.06);
+      noiseBurst(0.04, 0.05, 800);
+    },
+    explosion() {
+      noiseBurst(0.25, 0.28, 400);
+      tone(60, 0.2, "sawtooth", 0.12, 0.2);
+      setTimeout(() => tone(45, 0.15, "square", 0.08, 0.15), 80);
+    },
   };
 
   global.CFAudio = {

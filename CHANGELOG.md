@@ -5,6 +5,24 @@
 
 ---
 
+## [1.3.0] - 2026-05-24
+
+### 新增 Added
+
+- **手雷**（`G`）：抛物线投掷、范围伤害，每局 2 枚，冷却 3.2 秒
+- **连杀系统**：4 秒内连续击杀显示双杀/三杀等，额外 GP 奖励
+- **模块化架构**：`js/core`、`js/data`、`js/systems`，见 `docs/ARCHITECTURE.md`
+- **武器数据表** `data/weapons.json`（Mod 可参考）
+- **键位集中配置** `js/core/input-bindings.js`
+
+### 改动 Changed
+
+- `game.js` 使用 `CFGame.GameState` 状态机与 `CFGame.Constants` 常量
+- 发版脚本打包 `js/`、`data/` 目录
+- 资源 `v=20`
+
+---
+
 ## [1.2.0] - 2026-05-24
 
 ### 新增 Added

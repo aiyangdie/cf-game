@@ -24,6 +24,8 @@ const INCLUDE = [
   "LICENSE",
   "README.md",
   "CHANGELOG.md",
+  "docs/VERSIONING.md",
+  "docs/versions.json",
 ];
 
 function rmrf(dir) {

@@ -11,7 +11,8 @@
 |---|---|
 | **在线试玩** | https://aiyangdie.github.io/cf-game/ |
 | **下载发布包** | [Releases](https://github.com/aiyangdie/cf-game/releases/latest) |
-| **更新记录** | [CHANGELOG.md](CHANGELOG.md) |
+| **更新记录** | [CHANGELOG.md](CHANGELOG.md) · [版本台账](docs/versions.json) |
+| **版本管理** | [docs/VERSIONING.md](docs/VERSIONING.md) |
 | **参与贡献** | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | **路线图** | [docs/ROADMAP.md](docs/ROADMAP.md) |
 
@@ -19,7 +20,7 @@
 
 ---
 
-## 当前版本 v1.0.6 有什么
+## 当前版本 v1.0.7 有什么
 
 ### 玩法
 - 波次敌人、掩体躲子弹、碰撞不穿墙
@@ -179,6 +180,7 @@ git push origin v1.0.6
 
 | 版本 | 要点 |
 |------|------|
+| **v1.0.7** | 版本台账、发版脚本与 VERSIONING 文档 |
 | **v1.0.6** | 可见飞行子弹、敌人随波次变强（新兵/老兵/精英） |
 | **v1.0.5** | 跳跃、冲刺优化、脚步声、head bob |
 | **v1.0.4** | 音效、暂停、子弹轨迹、Shift 卡住修复 |

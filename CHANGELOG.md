@@ -5,6 +5,25 @@
 
 ---
 
+## [1.0.7] - 2026-05-24
+
+### 新增 Added
+
+- **版本管理体系**：`docs/VERSIONING.md` 发版流程说明
+- **版本台账** `docs/versions.json`：每个版本的 tag、cache、build、摘要
+- **一键升版本** `npm run version:patch`（`scripts/bump-version.js`）
+- **发版校验增强** `npm run verify`（含台账与 cache 一致性）
+
+### 修复 Fixed
+
+- `CHANGELOG.md` 补回缺失的 `## [1.0.5]` 章节标题
+
+### 改动 Changed
+
+- 资源 `v=15`
+
+---
+
 ## [1.0.6] - 2025-05-24
 
 ### 新增 Added
@@ -24,6 +43,8 @@
 - README 更新至 v1.0.6；在线资源 `v=14` 强制刷新缓存
 
 ---
+
+## [1.0.5] - 2025-05-24
 
 ### 新增 Added
 

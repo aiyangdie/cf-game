@@ -1,6 +1,6 @@
 {
   "name": "cf-game",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "开源网页版穿越火线风格 FPS · Three.js · 音效 · 跳跃 · GitHub Pages",
   "license": "MIT",
   "repository": {
@@ -11,9 +11,18 @@
   "scripts": {
     "start": "npx --yes serve . -p 3000",
     "build": "node scripts/build-release.js",
-    "verify": "node scripts/verify-versions.js"
+    "verify": "node scripts/verify-versions.js",
+    "version": "node scripts/bump-version.js",
+    "version:patch": "node scripts/bump-version.js patch",
+    "version:minor": "node scripts/bump-version.js minor"
   },
-  "keywords": ["game", "fps", "threejs", "github-pages", "open-source"],
+  "keywords": [
+    "game",
+    "fps",
+    "threejs",
+    "github-pages",
+    "open-source"
+  ],
   "engines": {
     "node": ">=18"
   }

@@ -44,7 +44,9 @@
 - [ ] 若新增静态文件，加入 `scripts/build-release.js` 的 `INCLUDE` 列表
 - [ ] 必要时更新 `README.md`、`docs/ROADMAP.md`
 - [ ] 运行 `npm run verify` 检查版本号一致
-- [ ] 发版：push `main`（在线 Pages）+ tag `v*`（Release zip）；详见 `CHANGELOG.md` 与 `README.md`
+- [ ] 发版流程见 [`docs/VERSIONING.md`](docs/VERSIONING.md)
+- [ ] `npm run version:patch` 升版本 → 填 CHANGELOG / `docs/versions.json`
+- [ ] `npm run verify` → commit → **`git tag vX.Y.Z`** → push main + push tag
 
 - 提交信息建议：`feat:` `fix:` `docs:` `chore:`（中文或英文均可）
 

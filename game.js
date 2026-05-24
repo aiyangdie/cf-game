@@ -2,8 +2,17 @@
   "use strict";
 
   const PLAYER_MAX_HEALTH = 100;
-  const MOVE_SPEED = 11;
-  const SPRINT_MULT = 1.5;
+  const EYE_HEIGHT = 1.7;
+  const MOVE_SPEED = 10.5;
+  const SPRINT_MULT = 1.55;
+  const BACKWARD_MULT = 0.72;
+  const AIR_CONTROL = 0.55;
+  const JUMP_VELOCITY = 6.8;
+  const GRAVITY = 24;
+  const HEAD_BOB_AMOUNT = 0.035;
+  const HEAD_BOB_SPEED = 11;
+  const FOOTSTEP_WALK = 0.42;
+  const FOOTSTEP_SPRINT = 0.28;
   const WAVE_HEAL = 30;
   const INVINCIBLE_MS = 1200;
   const WAVE_GRACE_MS = 2800;
@@ -63,7 +72,7 @@
   let reloadEnd = 0;
   let pointerLocked = false;
   let mouseDown = false;
-  let keys = {};
+  const keysDown = new Set();
   let yaw = 0;
   let pitch = 0;
   let muzzleFlash = null;
@@ -88,7 +97,47 @@
   const losTarget = new THREE.Vector3();
   const losDir = new THREE.Vector3();
   const shootEuler = new THREE.Euler(0, 0, 0, "YXZ");
+  const rightVec = new THREE.Vector3();
+  const axisY = new THREE.Vector3(0, 1, 0);
+  let headBobPhase = 0;
+  let footstepTimer = 0;
+  let wasOnGround = true;
   let hitSparks = [];
+  let tracers = [];
+  let velY = 0;
+  let eyeY = EYE_HEIGHT;
+  let onGround = true;
+
+  function clearAllKeys() {
+    keysDown.clear();
+  }
+
+  function isKey(code) {
+    return keysDown.has(code);
+  }
+
+  function isSprinting() {
+    return onGround
+      && (isKey("ShiftLeft") || isKey("ShiftRight"))
+      && isKey("KeyW") && !isKey("KeyS");
+  }
+
+  function isMovingInput() {
+    return isKey("KeyW") || isKey("KeyA") || isKey("KeyS") || isKey("KeyD");
+  }
+
+  function getMoveSpeed() {
+    let speed = MOVE_SPEED;
+    if (isSprinting()) speed *= SPRINT_MULT;
+    else if (isKey("KeyS") && !isKey("KeyW")) speed *= BACKWARD_MULT;
+    if (!onGround) speed *= AIR_CONTROL;
+    return speed;
+  }
+
+  function isMovingKey(code) {
+    return code === "KeyW" || code === "KeyA" || code === "KeyS" || code === "KeyD"
+      || code === "ShiftLeft" || code === "ShiftRight" || code === "Space";
+  }
 
   const canvas = document.getElementById("game-canvas");
   const menu = document.getElementById("menu");
@@ -100,6 +149,7 @@
   const lowHealthWarn = document.getElementById("low-health-warn");
   const enemyMarkers = document.getElementById("enemy-markers");
   const crosshair = document.getElementById("crosshair");
+  const sprintTag = document.getElementById("sprint-tag");
 
   function getWep() {
     return WEAPONS[currentWeapon];
@@ -172,7 +222,7 @@
     scene.fog = new THREE.Fog(0xc8e4f8, 55, 100);
 
     camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.1, 150);
-    camera.position.set(0, 1.7, 0);
+    camera.position.set(0, EYE_HEIGHT, 0);
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -298,7 +348,13 @@
     }
     applyWeaponVisual(id);
     updateHUD();
-    if (!silent) showPickupToast(`切换: ${WEAPONS[id].name}`);
+    if (!silent) {
+      showPickupToast(`切换: ${WEAPONS[id].name}`);
+      if (window.CFAudio) {
+        CFAudio.init();
+        CFAudio.play("switchWep");
+      }
+    }
   }
 
   /* ---------- 道具 ---------- */
@@ -381,6 +437,7 @@
       const before = health;
       health = Math.min(PLAYER_MAX_HEALTH, health + 45);
       showPickupToast(`+${Math.ceil(health - before)} 生命`);
+      if (window.CFAudio) CFAudio.play("pickup");
     } else {
       weaponAmmo.rifle.reserve = Math.min(WEAPONS.rifle.maxReserve, weaponAmmo.rifle.reserve + 35);
       weaponAmmo.pistol.reserve = Math.min(WEAPONS.pistol.maxReserve, weaponAmmo.pistol.reserve + 20);
@@ -392,6 +449,7 @@
         st.reserve -= take;
       }
       showPickupToast("弹药补给 +35", true);
+      if (window.CFAudio) CFAudio.play("pickup");
     }
     updateHUD();
   }
@@ -564,6 +622,11 @@
       bar.style.background = "linear-gradient(90deg, #00aa44, #44dd88)";
       lowHealthWarn.classList.add("hidden");
     }
+
+    if (sprintTag) {
+      const sprinting = gameState === "playing" && isSprinting() && isMovingInput();
+      sprintTag.classList.toggle("hidden", !sprinting);
+    }
   }
 
   function showHeadshotPopup() {
@@ -593,6 +656,7 @@
     reloading = true;
     document.getElementById("reload-hint").classList.remove("hidden");
     reloadEnd = performance.now() + wep.reloadTime;
+    if (window.CFAudio) CFAudio.play("reload");
   }
 
   function finishReload() {
@@ -638,11 +702,46 @@
       headshots++;
       showHeadshotPopup();
       flashHitMarker(true);
+      if (window.CFAudio) CFAudio.play("headshot");
     } else {
       flashHitMarker(false);
+      if (window.CFAudio) CFAudio.play("hit");
     }
     if (target.health <= 0) killEnemy(target, isHead);
     else updateHUD();
+  }
+
+  function updateTracers(dt) {
+    tracers = tracers.filter((t) => {
+      t.life -= dt;
+      if (t.life <= 0) {
+        scene.remove(t.line);
+        t.line.geometry.dispose();
+        t.line.material.dispose();
+        return false;
+      }
+      t.line.material.opacity = t.life / 0.07;
+      return true;
+    });
+  }
+
+  function spawnTracer(from, to) {
+    const geo = new THREE.BufferGeometry().setFromPoints([from.clone(), to.clone()]);
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xffdd66,
+      transparent: true,
+      opacity: 0.95,
+      linewidth: 2,
+    });
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    tracers.push({ line, life: 0.07 });
+  }
+
+  function kickCrosshair() {
+    crosshair.classList.remove("kick");
+    void crosshair.offsetWidth;
+    crosshair.classList.add("kick");
   }
 
   function fuzzyTargetEnemy(range, maxAngle) {
@@ -669,6 +768,13 @@
     const dy = (best.mesh.position.y + 2.15) - camera.position.y;
     const isHead = shootDir.y < -0.08 && dy > 0.6;
     return { target: best, isHead, hitCover: false };
+  }
+
+  function tracerEndPoint(range, hitPoint) {
+    if (hitPoint) return hitPoint.clone();
+    camera.getWorldPosition(shootOrigin);
+    getShootDirection(shootDir);
+    return shootOrigin.clone().add(shootDir.clone().multiplyScalar(range));
   }
 
   function raycastAttack(range) {
@@ -760,9 +866,13 @@
     if (wep.melee) {
       lastShot = now;
       const res = raycastAttack(wep.range);
+      camera.getWorldPosition(shootOrigin);
+      if (window.CFAudio) CFAudio.play("knife");
+      kickCrosshair();
       if (res && res.target && !res.hitCover) {
         damageEnemy(res.target, res.isHead, wep.damage, wep.headMult);
         if (res.point) spawnHitSpark(res.point);
+        spawnTracer(shootOrigin, res.point || tracerEndPoint(wep.range, null));
         weaponModels.knife.position.z = -0.08;
         setTimeout(() => { weaponModels.knife.position.z = 0; }, 80);
       }
@@ -772,6 +882,7 @@
     if (reloading) cancelReload();
     const st = getAmmoState();
     if (st.ammo <= 0) {
+      if (window.CFAudio) CFAudio.play("empty");
       startReload();
       return;
     }
@@ -780,12 +891,16 @@
     st.ammo--;
     updateHUD();
 
-    muzzleFlash.intensity = 2;
-    setTimeout(() => { muzzleFlash.intensity = 0; }, 35);
-    weaponsGroup.position.z = 0.03;
-    setTimeout(() => { weaponsGroup.position.z = 0; }, 35);
+    muzzleFlash.intensity = 3;
+    setTimeout(() => { muzzleFlash.intensity = 0; }, 45);
+    weaponsGroup.position.z = 0.05;
+    setTimeout(() => { weaponsGroup.position.z = 0; }, 45);
+    kickCrosshair();
+    if (window.CFAudio) CFAudio.play(currentWeapon === "pistol" ? "pistol" : "rifle");
 
     const res = raycastAttack(wep.range);
+    camera.getWorldPosition(shootOrigin);
+    spawnTracer(shootOrigin, tracerEndPoint(wep.range, res && res.point));
     if (res && res.point) spawnHitSpark(res.point);
     if (res && res.target && !res.hitCover) {
       damageEnemy(res.target, res.isHead, wep.damage, wep.headMult);
@@ -808,6 +923,7 @@
     score++;
     scene.remove(enemy.mesh);
     updateHUD();
+    if (window.CFAudio) CFAudio.play("kill");
 
     if (Math.random() < 0.42) {
       createPickup(Math.random() < 0.45 ? "health" : "ammo", pos.x, pos.z);
@@ -818,6 +934,7 @@
       health = Math.min(PLAYER_MAX_HEALTH, health + WAVE_HEAL);
       updateHUD();
       showMessage(`第 ${cleared} 波完成！+${WAVE_HEAL} HP`, 2400);
+      if (window.CFAudio) CFAudio.play("wave");
       wave++;
       clearTimeout(waveTimerId);
       waveTimerId = setTimeout(() => {
@@ -854,6 +971,7 @@
     updateHUD();
     damageOverlay.classList.add("flash");
     setTimeout(() => damageOverlay.classList.remove("flash"), 250);
+    if (window.CFAudio) CFAudio.play("damage");
     if (health <= 0) endGame(false);
   }
 
@@ -934,6 +1052,7 @@
 
   function endGame(won) {
     clearTimers();
+    clearAllKeys();
     mouseDown = false;
     gameState = "gameover";
     document.exitPointerLock();
@@ -958,6 +1077,13 @@
     clearTimers();
     hitSparks.forEach((s) => scene.remove(s.mesh));
     hitSparks = [];
+    tracers.forEach((t) => {
+      scene.remove(t.line);
+      t.line.geometry.dispose();
+      t.line.material.dispose();
+    });
+    tracers = [];
+    clearAllKeys();
     enemies.forEach((e) => scene.remove(e.mesh));
     enemies = [];
     clearPickups();
@@ -974,7 +1100,13 @@
     invincibleUntil = 0;
     waveGraceUntil = 0;
     mouseDown = false;
-    camera.position.set(0, 1.7, 0);
+    velY = 0;
+    eyeY = EYE_HEIGHT;
+    onGround = true;
+    headBobPhase = 0;
+    footstepTimer = 0;
+    wasOnGround = true;
+    camera.position.set(0, EYE_HEIGHT, 0);
     yaw = 0;
     pitch = 0;
     hideTransientHud();
@@ -995,9 +1127,72 @@
     menu.classList.remove("active");
     menu.classList.add("hidden");
     hud.classList.remove("hidden");
+    if (window.CFAudio) CFAudio.init();
     canvas.requestPointerLock();
     lastTime = performance.now();
     animate();
+  }
+
+  function tryJump() {
+    if (!onGround || velY > 0.1) return;
+    velY = JUMP_VELOCITY;
+    onGround = false;
+    if (window.CFAudio) CFAudio.play("jump");
+  }
+
+  function updatePlayerMovement(dt) {
+    let ix = 0;
+    let iz = 0;
+    if (isKey("KeyW")) iz -= 1;
+    if (isKey("KeyS")) iz += 1;
+    if (isKey("KeyA")) ix -= 1;
+    if (isKey("KeyD")) ix += 1;
+
+    const moving = ix !== 0 || iz !== 0;
+    if (moving) {
+      const inputLen = Math.sqrt(ix * ix + iz * iz);
+      ix /= inputLen;
+      iz /= inputLen;
+      const moveAmount = getMoveSpeed() * dt;
+      const forward = tmpVec.set(0, 0, -1).applyAxisAngle(axisY, yaw);
+      rightVec.set(1, 0, 0).applyAxisAngle(axisY, yaw);
+      const wx = forward.x * (-iz) + rightVec.x * ix;
+      const wz = forward.z * (-iz) + rightVec.z * ix;
+      const moved = moveWithCollision(
+        camera.position.x, camera.position.z, wx * moveAmount, wz * moveAmount, PLAYER_RADIUS
+      );
+      camera.position.x = moved.x;
+      camera.position.z = moved.z;
+    }
+
+    velY -= GRAVITY * dt;
+    eyeY += velY * dt;
+    if (eyeY <= EYE_HEIGHT) {
+      if (!wasOnGround && velY < -2 && window.CFAudio) CFAudio.play("land");
+      eyeY = EYE_HEIGHT;
+      velY = 0;
+      onGround = true;
+    } else {
+      onGround = false;
+    }
+    wasOnGround = onGround;
+
+    let bob = 0;
+    if (onGround && moving) {
+      headBobPhase += dt * HEAD_BOB_SPEED * (isSprinting() ? 1.35 : 1);
+      bob = Math.sin(headBobPhase) * HEAD_BOB_AMOUNT;
+      footstepTimer -= dt;
+      const interval = isSprinting() ? FOOTSTEP_SPRINT : FOOTSTEP_WALK;
+      if (footstepTimer <= 0) {
+        if (window.CFAudio) CFAudio.play("footstep");
+        footstepTimer = interval;
+      }
+    } else if (onGround) {
+      headBobPhase = 0;
+      footstepTimer = 0;
+    }
+
+    camera.position.y = eyeY + bob;
   }
 
   function animate() {
@@ -1010,39 +1205,48 @@
 
     if (reloading && now >= reloadEnd) finishReload();
 
-    let mdx = 0;
-    let mdz = 0;
-    const spd = MOVE_SPEED * (keys["Shift"] ? SPRINT_MULT : 1) * dt;
-    if (keys["w"] || keys["W"]) mdz -= spd;
-    if (keys["s"] || keys["S"]) mdz += spd;
-    if (keys["a"] || keys["A"]) mdx -= spd;
-    if (keys["d"] || keys["D"]) mdx += spd;
-
-    if (mdx !== 0 || mdz !== 0) {
-      moveDir.set(mdx, 0, mdz);
-      const len = moveDir.length();
-      if (len > 0) {
-        moveDir.multiplyScalar(1 / len);
-        const forward = tmpVec.set(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        const wx = forward.x * (-moveDir.z) + right.x * moveDir.x;
-        const wz = forward.z * (-moveDir.z) + right.z * moveDir.x;
-        const moved = moveWithCollision(camera.position.x, camera.position.z, wx * len, wz * len, PLAYER_RADIUS);
-        camera.position.x = moved.x;
-        camera.position.z = moved.z;
-      }
-    }
-
-    camera.position.y = 1.7;
+    updatePlayerMovement(dt);
     syncCameraRotation();
 
     if (mouseDown) attack();
 
     updatePickups(dt);
     updateHitSparks(dt);
+    updateTracers(dt);
     enemyAI(dt, now);
     updateEnemyScreenMarkers();
+
+    if (sprintTag) {
+      const sprinting = isSprinting() && isMovingInput();
+      sprintTag.classList.toggle("hidden", !sprinting);
+    }
+
     renderer.render(scene, camera);
+  }
+
+  function pauseGame() {
+    if (gameState !== "playing") return;
+    clearTimers();
+    clearAllKeys();
+    mouseDown = false;
+    gameState = "pause";
+    document.exitPointerLock();
+    cancelAnimationFrame(animId);
+    if (enemyMarkers) enemyMarkers.innerHTML = "";
+    pauseScreen.classList.remove("hidden");
+    pauseScreen.classList.add("active");
+    if (window.CFAudio) CFAudio.play("pause");
+  }
+
+  function resumeGame() {
+    pauseScreen.classList.add("hidden");
+    pauseScreen.classList.remove("active");
+    gameState = "playing";
+    clearAllKeys();
+    mouseDown = false;
+    canvas.requestPointerLock();
+    lastTime = performance.now();
+    animate();
   }
 
   document.getElementById("btn-start").addEventListener("click", startGame);
@@ -1054,16 +1258,10 @@
     help.classList.remove("active");
     menu.classList.add("active");
   });
-  document.getElementById("btn-resume").addEventListener("click", () => {
-    pauseScreen.classList.add("hidden");
-    pauseScreen.classList.remove("active");
-    gameState = "playing";
-    canvas.requestPointerLock();
-    lastTime = performance.now();
-    animate();
-  });
+  document.getElementById("btn-resume").addEventListener("click", resumeGame);
   function returnToMenu() {
     clearTimers();
+    clearAllKeys();
     gameState = "menu";
     mouseDown = false;
     document.exitPointerLock();
@@ -1101,27 +1299,45 @@
   });
 
   document.addEventListener("keydown", (e) => {
-    keys[e.key] = true;
-    if (gameState !== "playing") return;
-    if (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "r" || e.key === "R") {
-      e.preventDefault();
-    }
-    if (e.key === "1") switchWeapon("rifle");
-    if (e.key === "2") switchWeapon("pistol");
-    if (e.key === "3") switchWeapon("knife");
-    if (e.key === "r" || e.key === "R") startReload();
-    if (e.key === "Escape") {
-      clearTimers();
-      gameState = "pause";
-      mouseDown = false;
-      document.exitPointerLock();
-      cancelAnimationFrame(animId);
-      if (enemyMarkers) enemyMarkers.innerHTML = "";
-      pauseScreen.classList.remove("hidden");
-      pauseScreen.classList.add("active");
+    if (isMovingKey(e.code)) e.preventDefault();
+    keysDown.add(e.code);
+
+    if (gameState === "playing") {
+      if (e.code === "Digit1") { e.preventDefault(); switchWeapon("rifle"); }
+      if (e.code === "Digit2") { e.preventDefault(); switchWeapon("pistol"); }
+      if (e.code === "Digit3") { e.preventDefault(); switchWeapon("knife"); }
+      if (e.code === "KeyR") { e.preventDefault(); startReload(); }
+      if (e.code === "Escape" || e.code === "KeyP") {
+        e.preventDefault();
+        pauseGame();
+      }
+      if (e.code === "KeyM") {
+        e.preventDefault();
+        if (window.CFAudio) {
+          const m = CFAudio.toggleMute();
+          showPickupToast(m ? "音效已关闭" : "音效已开启", true);
+        }
+      }
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!e.repeat) tryJump();
+      }
+    } else if (gameState === "pause") {
+      if (e.code === "Escape" || e.code === "KeyP") {
+        e.preventDefault();
+        resumeGame();
+      }
     }
   });
-  document.addEventListener("keyup", (e) => { keys[e.key] = false; });
+
+  document.addEventListener("keyup", (e) => {
+    keysDown.delete(e.code);
+  });
+
+  window.addEventListener("blur", clearAllKeys);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clearAllKeys();
+  });
 
   document.addEventListener("mousemove", (e) => {
     if (!pointerLocked || gameState !== "playing") return;
@@ -1144,7 +1360,10 @@
 
   document.addEventListener("pointerlockchange", () => {
     pointerLocked = document.pointerLockElement === canvas;
-    if (!pointerLocked) mouseDown = false;
+    if (!pointerLocked) {
+      mouseDown = false;
+      clearAllKeys();
+    }
   });
 
   window.addEventListener("resize", () => {

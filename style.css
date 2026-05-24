@@ -299,6 +299,48 @@ kbd {
   transform: translate(-50%, -50%);
 }
 
+#crosshair.kick {
+  animation: crosshair-kick 0.12s ease-out;
+}
+
+@keyframes crosshair-kick {
+  0% { transform: translate(-50%, -50%) scale(1.35); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+#sprint-tag {
+  position: absolute;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #dd5500;
+  background: rgba(255,255,255,0.75);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+}
+
+.pause-hint {
+  margin: 0.5rem 0 1rem;
+  color: #556;
+  font-size: 0.95rem;
+}
+
+.pause-keys {
+  text-align: left;
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+  color: #445;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+.pause-keys kbd {
+  margin-right: 0.15rem;
+}
+
 #hit-marker {
   position: absolute;
   top: 50%;

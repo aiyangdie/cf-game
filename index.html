@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>穿越火线 · 网页版 CF</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <div id="menu" class="screen active">
@@ -30,12 +30,13 @@
     <div class="help-panel help-wide">
       <h2>操作说明</h2>
       <ul>
-        <li><kbd>W A S D</kbd> 移动 · <kbd>Shift</kbd> 冲刺</li>
-        <li><kbd>点击画面</kbd> 锁定鼠标 · <kbd>左键</kbd> 攻击</li>
+        <li><kbd>W A S D</kbd> 移动 · <kbd>Shift+W</kbd> 向前冲刺</li>
+        <li><kbd>Space</kbd> 跳跃 · <kbd>点击画面</kbd> 锁定鼠标 · <kbd>左键</kbd> 攻击</li>
         <li><kbd>1</kbd> AK47步枪 · <kbd>2</kbd> 沙鹰手枪 · <kbd>3</kbd> 军刀</li>
-        <li><kbd>R</kbd> 换弹（刀无需换弹）· <kbd>ESC</kbd> 暂停</li>
+        <li><kbd>R</kbd> 换弹 · <kbd>ESC</kbd> / <kbd>P</kbd> 暂停</li>
+        <li><kbd>M</kbd> 开关音效</li>
       </ul>
-      <p>地图上的 <span class="hint-green">绿色十字</span> 补血，<span class="hint-orange">橙色箱子</span> 补弹。爆头伤害极高并显示「爆头」。靠近道具自动拾取。</p>
+      <p>地图上的 <span class="hint-green">绿色十字</span> 补血，<span class="hint-orange">橙色箱子</span> 补弹。爆头有专属音效。Shift 卡住时按 ESC 暂停再恢复。</p>
       <button id="btn-back" class="btn-primary">返回</button>
     </div>
   </div>
@@ -72,12 +73,18 @@
     <div id="damage-overlay"></div>
     <div id="low-health-warn" class="hidden">生命值过低 — 快找掩体！</div>
     <div id="enemy-markers"></div>
+    <div id="sprint-tag" class="hidden">冲刺</div>
   </div>
 
   <div id="pause" class="screen hidden">
-    <div class="pause-panel">
+    <div class="pause-panel help-wide">
       <h2>游戏暂停</h2>
-      <button id="btn-resume" class="btn-primary">继续</button>
+      <p class="pause-hint">按 <kbd>ESC</kbd> 或 <kbd>P</kbd> 继续游戏</p>
+      <ul class="pause-keys">
+        <li><kbd>W A S D</kbd> 移动 · <kbd>Shift+W</kbd> 冲刺 · <kbd>Space</kbd> 跳跃</li>
+        <li><kbd>1 2 3</kbd> 换枪 · <kbd>R</kbd> 换弹 · <kbd>M</kbd> 音效</li>
+      </ul>
+      <button id="btn-resume" class="btn-primary">继续 (P)</button>
       <button id="btn-menu" class="btn-secondary">主菜单</button>
     </div>
   </div>
@@ -95,8 +102,9 @@
 
   <script src="config.js"></script>
   <script src="gate.js"></script>
+  <script src="audio.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="game.js?v=10"></script>
+  <script src="game.js?v=12"></script>
   <script>
     (function () {
       var c = window.CF_CONFIG || {};

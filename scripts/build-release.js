@@ -15,6 +15,7 @@ const stageDir = path.join(distDir, outName);
 const INCLUDE = [
   "index.html",
   "game.js",
+  "audio.js",
   "style.css",
   "favicon.svg",
   "gate.js",

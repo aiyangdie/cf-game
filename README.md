@@ -19,15 +19,16 @@
 
 ---
 
-## 当前版本 v1.0.5 有什么
+## 当前版本 v1.0.6 有什么
 
 ### 玩法
 - 波次敌人、掩体躲子弹、碰撞不穿墙
 - **三把武器**：`1` AK47 · `2` 沙鹰 · `3` 军刀
 - **道具**：绿十字补血、橙箱补弹（走近拾取，击杀概率掉落）
 - **爆头**：大字「爆头!」+ HUD 统计 + 专属音效
-- **射击反馈**：子弹轨迹线、弹着点火花、准星后坐
+- **可见子弹**：玩家黄弹 / 敌人红弹，带飞行拖尾
 - **移动**：`Space` 跳跃 · `Shift+W` 向前冲刺 · 后退减速 · 脚步声
+- **难度曲线**：波次越高敌人越强（新兵 → 老兵 → 精英）
 
 ### 音效（`audio.js`）
 Web Audio 程序化合成，无需外部音频文件：
@@ -79,7 +80,7 @@ npm start
 或直接双击 / 用浏览器打开 `index.html`（推荐 Chrome / Edge）。
 
 ### 下载 Release 部署到自己的服务器
-1. 打开 [Releases](https://github.com/aiyangdie/cf-game/releases/latest) 下载 `cf-game-v1.0.5.zip`
+1. 打开 [Releases](https://github.com/aiyangdie/cf-game/releases/latest) 下载 `cf-game-v1.0.6.zip`
 2. 解压到网站根目录
 3. 用 Nginx / Apache / 对象存储静态托管即可
 
@@ -101,8 +102,8 @@ window.CF_CONFIG = {
     hint: "请输入访问码",
   },
   siteName: "CF Web Edition",
-  version: "1.0.5",
-  build: "20250524-5",
+  version: "1.0.6",
+  build: "20250524-6",
 };
 ```
 
@@ -164,12 +165,12 @@ cf-game/
 # 2. 递增 index.html 里 style.css?v= 和 game.js?v=
 # 3. 提交并推送
 git add .
-git commit -m "release: v1.0.5"
+git commit -m "release: v1.0.6"
 git push origin main
 
 # 4. 打标签触发 Release 工作流（自动上传 zip）
-git tag v1.0.5
-git push origin v1.0.5
+git tag v1.0.6
+git push origin v1.0.6
 ```
 
 ---
@@ -178,6 +179,7 @@ git push origin v1.0.5
 
 | 版本 | 要点 |
 |------|------|
+| **v1.0.6** | 可见飞行子弹、敌人随波次变强（新兵/老兵/精英） |
 | **v1.0.5** | 跳跃、冲刺优化、脚步声、head bob |
 | **v1.0.4** | 音效、暂停、子弹轨迹、Shift 卡住修复 |
 | **v1.0.3** | 射击射线修复、辅助瞄准、弹着点反馈 |

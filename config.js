@@ -8,5 +8,5 @@ window.CF_CONFIG = {
   },
   siteName: "CF Web Edition",
   version: "1.0.6",
-  build: "20250524-6",
+  build: "20250524-6b",
 };

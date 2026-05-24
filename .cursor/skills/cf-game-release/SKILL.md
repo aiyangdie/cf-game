@@ -9,6 +9,28 @@ description: >-
 
 # CF 网页游戏 · 完整发版流程
 
+## 用途（一句话）
+
+**帮主人把游戏完整更新到 GitHub：凡是在 GitHub 上能更新的地方，都一起更新。**
+
+不是改游戏玩法，而是发版助手：改完 `game.js` 等功能后，由 Agent 按本 Skill 同步版本、文档、缓存，并推送仓库，让 **源码、在线试玩、下载包、说明文档** 全是同一版。
+
+---
+
+## GitHub 上会更新哪些地方
+
+| 位置 | 更新方式 | 用户看到什么 |
+|------|----------|----------------|
+| **仓库源码** `main` | `git push origin main` | GitHub 代码页最新 |
+| **在线试玩** Pages | push main 后 Actions 自动部署 | https://aiyangdie.github.io/cf-game/ |
+| **Release 游戏包** zip | `git tag vX.Y.Z` + push tag | Releases 里下载 `cf-game-v*.zip` |
+| **README / CHANGELOG** | 随 commit 一起推送 | 仓库首页、更新记录 |
+| **版本号** | `config.js` + 主菜单标签 | 游戏里显示「版本 x.x.x」 |
+
+配套脚本 `npm run verify`（`scripts/verify-versions.js`）只负责**发版前检查**版本号是否写齐，不代替 git 推送。
+
+---
+
 > **项目**：穿越火线网页版 · [cf-game](https://github.com/aiyangdie/cf-game)  
 > **在线玩**：https://aiyangdie.github.io/cf-game/  
 > **原则**：改源码 = 同步版本号 + 文档 + 缓存 + 推送 main + 打 tag。三件事一起做完：**源码 · 游戏包 · 在线站**。

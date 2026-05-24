@@ -402,3 +402,119 @@ kbd {
 @keyframes arrowPulse {
   50% { opacity: 0.5; }
 }
+
+.help-wide {
+  max-width: 480px;
+}
+
+.hint-green { color: #00aa44; font-weight: 700; }
+.hint-orange { color: #dd7700; font-weight: 700; }
+
+#weapon-name {
+  font-size: 0.8rem;
+  color: #dd5500;
+  font-weight: 700;
+}
+
+#weapon-bar {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.82);
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.wslot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  opacity: 0.55;
+  transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.wslot kbd {
+  font-size: 0.7rem;
+  margin: 0 0 0.15rem;
+  min-width: 1.2rem;
+}
+
+.wslot span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #445;
+}
+
+.wslot.active {
+  opacity: 1;
+  border-color: #ff7700;
+  background: rgba(255, 120, 0, 0.12);
+}
+
+.wslot.active span { color: #cc4400; }
+
+#headshot-popup {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #ffcc00;
+  letter-spacing: 0.2em;
+  text-shadow:
+    0 0 8px #ff2200,
+    0 2px 0 #cc4400,
+    0 4px 12px rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+}
+
+#headshot-popup.show {
+  opacity: 1;
+  animation: headshotPop 0.65s ease-out forwards;
+}
+
+@keyframes headshotPop {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  25% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+  70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -60%) scale(0.9); opacity: 0; }
+}
+
+#pickup-toast {
+  position: absolute;
+  bottom: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 80, 40, 0.9);
+  color: #fff;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid #4f8;
+}
+
+#pickup-toast.ammo-toast {
+  background: rgba(120, 60, 0, 0.9);
+  border-color: #fa4;
+}
+
+#crosshair.knife-mode::before,
+#crosshair.knife-mode::after {
+  background: #44aaff;
+  box-shadow: 0 0 0 1px #fff, 0 0 8px rgba(60, 160, 255, 0.9);
+}
+
+#crosshair.knife-mode::before { height: 10px; }
+#crosshair.knife-mode::after { width: 10px; }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>穿越火线 · 网页版 CF</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
   <div id="menu" class="screen active">
@@ -16,22 +16,20 @@
         <button id="btn-start" class="btn-primary">开始游戏</button>
         <button id="btn-help" class="btn-secondary">操作说明</button>
       </div>
-      <p class="credit">GitHub Pages 在线版 · aiyangdie</p>
+      <p class="credit">GitHub Pages · aiyangdie</p>
     </div>
   </div>
 
   <div id="help" class="screen">
-    <div class="help-panel">
+    <div class="help-panel help-wide">
       <h2>操作说明</h2>
       <ul>
-        <li><kbd>W A S D</kbd> 移动</li>
-        <li><kbd>点击画面</kbd> 锁定鼠标并瞄准</li>
-        <li><kbd>左键</kbd> 射击（可连发，换弹时开枪会打断换弹）</li>
-        <li><kbd>R</kbd> 换弹</li>
-        <li><kbd>Shift</kbd> 冲刺</li>
-        <li><kbd>ESC</kbd> 暂停 / 返回菜单</li>
+        <li><kbd>W A S D</kbd> 移动 · <kbd>Shift</kbd> 冲刺</li>
+        <li><kbd>点击画面</kbd> 锁定鼠标 · <kbd>左键</kbd> 攻击</li>
+        <li><kbd>1</kbd> AK47步枪 · <kbd>2</kbd> 沙鹰手枪 · <kbd>3</kbd> 军刀</li>
+        <li><kbd>R</kbd> 换弹（刀无需换弹）· <kbd>ESC</kbd> 暂停</li>
       </ul>
-      <p>躲在箱子/沙袋后面可避免被击中。每波结束自动回血。爆头伤害更高。</p>
+      <p>地图上的 <span class="hint-green">绿色十字</span> 补血，<span class="hint-orange">橙色箱子</span> 补弹。爆头伤害极高并显示「爆头」。靠近道具自动拾取。</p>
       <button id="btn-back" class="btn-primary">返回</button>
     </div>
   </div>
@@ -48,13 +46,22 @@
         <span id="score-text">击杀: 0</span>
       </div>
       <div class="hud-item ammo-box">
+        <span id="weapon-name">AK47</span>
         <span id="ammo-text">30 / 90</span>
-        <span class="label">弹药</span>
       </div>
     </div>
+
+    <div id="weapon-bar">
+      <div class="wslot active" data-w="rifle"><kbd>1</kbd><span>AK47</span></div>
+      <div class="wslot" data-w="pistol"><kbd>2</kbd><span>沙鹰</span></div>
+      <div class="wslot" data-w="knife"><kbd>3</kbd><span>军刀</span></div>
+    </div>
+
     <div id="crosshair"></div>
     <div id="hit-marker" class="hidden">✕</div>
+    <div id="headshot-popup" class="hidden">爆头!</div>
     <div id="reload-hint" class="hidden">换弹中...</div>
+    <div id="pickup-toast" class="hidden"></div>
     <div id="message" class="hidden"></div>
     <div id="damage-overlay"></div>
     <div id="low-health-warn" class="hidden">生命值过低 — 快找掩体！</div>
@@ -81,6 +88,6 @@
   <canvas id="game-canvas"></canvas>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="game.js?v=4"></script>
+  <script src="game.js?v=5"></script>
 </body>
 </html>

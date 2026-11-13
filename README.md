@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/covers/11-cf-game.jpg" alt="cf-game 项目封面" width="100%"></p>
+
 # 穿越火线 · 网页版 CF（开源）
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
